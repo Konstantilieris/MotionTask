@@ -1,0 +1,87 @@
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDb } from "@/lib/db";
+import { Activity } from "@/lib/models/Activity";
+import Issue from "@/models/Issue";
+
+// GET /api/issues/[key]/activities - Get all activities for an issue
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { key: string } }
+) {
+  try {
+    await connectToDb();
+    const { key } = await params;
+
+    // Find issue by key
+    const issue = await Issue.findOne({ key });
+    if (!issue) {
+      return NextResponse.json({ error: "Issue not found" }, { status: 404 });
+    }
+
+    // Get activities for this issue, sorted by creation date (newest first)
+    const activities = await Activity.find({ issue: issue._id })
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return NextResponse.json({
+      success: true,
+      activities: activities.map((activity: Record<string, unknown>) => ({
+        ...activity,
+        at: activity.createdAt,
+        actor: activity.user, // Map user to actor for frontend compatibility
+      })),
+    });
+  } catch (error) {
+    console.error("Error fetching activities:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch activities" },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/issues/[key]/activities - Create a new activity
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { key: string } }
+) {
+  try {
+    await connectToDb();
+    const { key } = await params;
+    const body = await request.json();
+
+    // Find issue by key
+    const issue = await Issue.findOne({ key });
+    if (!issue) {
+      return NextResponse.json({ error: "Issue not found" }, { status: 404 });
+    }
+
+    // For now, use a mock user ID - in a real app, get from auth token
+    const mockUserId = "507f1f77bcf86cd799439011"; // Replace with actual user from auth
+
+    const activity = await Activity.create({
+      issue: issue._id,
+      type: body.type,
+      user: mockUserId,
+      metadata: body.meta || {},
+    });
+
+    // Populate the user field
+    const populatedActivity = await activity.populate("user", "name email");
+    const activityObject = populatedActivity.toObject();
+
+    return NextResponse.json({
+      success: true,
+      ...activityObject,
+      at: activityObject.createdAt,
+      actor: activityObject.user, // Map user to actor for frontend compatibility
+    });
+  } catch (error) {
+    console.error("Error creating activity:", error);
+    return NextResponse.json(
+      { error: "Failed to create activity" },
+      { status: 500 }
+    );
+  }
+}

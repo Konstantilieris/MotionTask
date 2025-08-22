@@ -1,103 +1,188 @@
-import Image from "next/image";
+"use client";
+
+import { Button } from "@heroui/react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { Icon } from "@iconify/react";
+import { motion } from "framer-motion";
+import BlurText from "@/components/shared/Text/Blur";
+import GridItem from "@/components/shared/Cards/GridItem";
+import DarkVeil from "@/components/shared/Effects/DarkVeil/DarkVeil";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const { data: session, status } = useSession();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.3,
+        delayChildren: 1.2, // Wait for BlurText animation to finish
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+      },
+    },
+  };
+
+  const gridVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 3.8, // After buttons appear
+      },
+    },
+  };
+
+  const gridItemVariants = {
+    hidden: { opacity: 0, y: 40, scale: 0.9 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.6,
+      },
+    },
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-black to-neutral-800 flex flex-col ">
+      <div className="absolute inset-0">
+        <DarkVeil />
+      </div>
+
+      {/* Header Content */}
+      <div className="container mx-auto px-4 pt-16 z-[999] flex-shrink-0">
+        <div className="text-center space-y-8 w-full flex flex-col items-center">
+          <BlurText
+            text="Welcome to Motion Task"
+            delay={150}
+            animateBy="words"
+            direction="top"
+            className="text-4xl mb-8 text-center z-[9999] text-low-contrast select-none"
+          />
+
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-8 flex flex-col items-center"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <motion.p
+              variants={itemVariants}
+              className="text-2xl text-gray-300 max-w-2xl mx-auto z-[9999] select-none"
+            >
+              A modern task management application with secure authentication
+            </motion.p>
+
+            <motion.div
+              variants={itemVariants}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8 z-[9999]"
+            >
+              {status === "loading" ? (
+                <div>Loading...</div>
+              ) : session ? (
+                <Button
+                  as={Link}
+                  href="/main"
+                  color="primary"
+                  size="lg"
+                  startContent={<Icon icon="solar:dashboard-square-linear" />}
+                >
+                  Go to Dashboard
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    as={Link}
+                    href="/auth/signin"
+                    color="primary"
+                    size="lg"
+                    startContent={<Icon icon="solar:login-2-linear" />}
+                  >
+                    Sign In
+                  </Button>
+                  <Button
+                    as={Link}
+                    href="/auth/signup"
+                    variant="bordered"
+                    size="lg"
+                    startContent={<Icon icon="solar:user-plus-linear" />}
+                    className="text-low-contrast "
+                  >
+                    Sign Up
+                  </Button>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+
+      {/* Cards Section - Takes remaining height */}
+      <motion.div
+        variants={gridVariants}
+        initial="hidden"
+        animate="visible"
+        className="flex-1 flex items-center justify-center px-4 pb-16 pt-8"
+      >
+        <motion.ul className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl w-full h-full max-h-[600px]">
+          <motion.div variants={gridItemVariants} className="h-full">
+            <GridItem
+              area="h-full"
+              icon={
+                <Icon
+                  icon="solar:shield-check-bold"
+                  className="w-8 h-8 text-green-500"
+                />
+              }
+              title="Secure Authentication"
+              description="JWT-based authentication with refresh tokens for enhanced security and seamless user experience across all devices."
+            />
+          </motion.div>
+
+          <motion.div variants={gridItemVariants} className="h-full">
+            <GridItem
+              area="h-full"
+              icon={
+                <Icon
+                  icon="solar:sidebar-minimalistic-bold"
+                  className="w-8 h-8 text-blue-500"
+                />
+              }
+              title="Modern UI"
+              description="Beautiful and responsive interface built with <strong>Hero UI</strong> components, featuring dark mode and smooth animations."
+            />
+          </motion.div>
+
+          <motion.div variants={gridItemVariants} className="h-full">
+            <GridItem
+              area="h-full"
+              icon={
+                <Icon
+                  icon="solar:graph-new-bold"
+                  className="w-8 h-8 text-purple-500"
+                />
+              }
+              title="Task Management"
+              description="Efficiently organize and track your tasks with intuitive tools, team collaboration, and <strong>real-time updates</strong>."
+            />
+          </motion.div>
+        </motion.ul>
+      </motion.div>
     </div>
   );
 }
