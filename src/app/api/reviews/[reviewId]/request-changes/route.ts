@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // POST /api/reviews/[reviewId]/request-changes - Request changes on a review
 export async function POST(
   request: NextRequest,
-  { params }: { params: { reviewId: string } }
+  { params }: { params: Promise<{ reviewId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,7 +18,8 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const reviewId = params.reviewId;
+    const resolvedParams = await params;
+    const reviewId = resolvedParams.reviewId;
     const body = await request.json();
 
     // Validate request body

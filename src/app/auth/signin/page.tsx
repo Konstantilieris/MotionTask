@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -14,7 +14,16 @@ export default function SignIn() {
   return (
     <div className="relative w-full overflow-hidden">
       <AmbientColor />
-      <SignInForm />
+      <Suspense fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p>Loading...</p>
+          </div>
+        </div>
+      }>
+        <SignInForm />
+      </Suspense>
     </div>
   );
 }

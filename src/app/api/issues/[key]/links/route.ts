@@ -26,7 +26,7 @@ async function resolveIssueReference(reference: string) {
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { key: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -37,7 +37,8 @@ export async function POST(
     const { other } = LinkBody.parse(await req.json());
     await connectToDb();
 
-    const issue = await resolveIssueReference(params.key);
+    const resolvedParams = await params;
+    const issue = await resolveIssueReference(resolvedParams.key);
     if (!issue) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });
     }

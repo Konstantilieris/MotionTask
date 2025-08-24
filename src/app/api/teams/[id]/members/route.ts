@@ -5,9 +5,9 @@ import { AuthUtils } from "@/lib/auth-utils";
 import { TeamUtils } from "@/lib/team-utils";
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // POST /api/teams/[id]/members - Add member to team (admin only)
@@ -24,7 +24,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { id: teamId } = params;
+    const resolvedParams = await params;
+    const { id: teamId } = resolvedParams;
     const { userId } = await request.json();
 
     if (!userId) {
@@ -71,7 +72,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { id: teamId } = params;
+    const resolvedParams = await params;
+    const { id: teamId } = resolvedParams;
     const { userId } = await request.json();
 
     if (!userId) {

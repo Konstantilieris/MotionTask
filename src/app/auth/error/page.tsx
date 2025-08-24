@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button, Card, CardBody, CardHeader } from "@heroui/react";
 import { Icon } from "@iconify/react";
@@ -13,7 +13,7 @@ const errorMessages: Record<string, string> = {
   default: "An error occurred during authentication.",
 };
 
-export default function AuthError() {
+function AuthErrorContent() {
   const searchParams = useSearchParams();
   const [error, setError] = useState("");
 
@@ -63,5 +63,31 @@ export default function AuthError() {
         </CardBody>
       </Card>
     </div>
+  );
+}
+
+export default function AuthError() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 to-pink-100 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col items-center space-y-2 text-center">
+              <div className="rounded-full bg-red-100 p-3">
+                <Icon
+                  icon="solar:danger-triangle-bold"
+                  className="h-8 w-8 text-red-600"
+                />
+              </div>
+              <h1 className="text-2xl font-semibold tracking-tight text-red-900">
+                Loading...
+              </h1>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <AuthErrorContent />
+    </Suspense>
   );
 }

@@ -11,9 +11,9 @@ function isObjectId(str: string): boolean {
 }
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     key: string;
-  };
+  }>;
 }
 
 // GET /api/projects/[key] - Get project by ID or key
@@ -24,7 +24,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { key } = params;
+    const resolvedParams = await params;
+    const { key } = resolvedParams;
     const currentUser = await AuthUtils.getUserById(session.user.id);
     if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -84,7 +85,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { key } = params;
+    const resolvedParams = await params;
+    const { key } = resolvedParams;
     const { name, description, status, priority } = await request.json();
 
     await connectDB();
@@ -171,7 +173,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { key } = params;
+    const resolvedParams = await params;
+    const { key } = resolvedParams;
 
     await connectDB();
 

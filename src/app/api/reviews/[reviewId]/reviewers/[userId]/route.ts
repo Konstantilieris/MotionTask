@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 // DELETE /api/reviews/[reviewId]/reviewers/[userId] - Remove a reviewer
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { reviewId: string; userId: string } }
+  { params }: { params: Promise<{ reviewId: string; userId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,7 +17,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { reviewId, userId } = params;
+    const resolvedParams = await params;
+    const { reviewId, userId } = resolvedParams;
 
     const review = await ReviewsService.removeReviewer(
       reviewId,

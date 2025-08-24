@@ -9,7 +9,7 @@ import { AuthUtils } from "@/lib/auth-utils";
 // Add issue to sprint
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -27,7 +27,7 @@ export async function POST(
     }
 
     const { issueId } = await request.json();
-    
+
     if (!issueId) {
       return NextResponse.json(
         { error: "Issue ID is required" },
@@ -37,7 +37,8 @@ export async function POST(
 
     await connectDB();
 
-    const sprint = await Sprint.findById(params.id);
+    const resolvedParams = await params;
+    const sprint = await Sprint.findById(resolvedParams.key);
     if (!sprint) {
       return NextResponse.json({ error: "Sprint not found" }, { status: 404 });
     }
@@ -48,7 +49,7 @@ export async function POST(
     }
 
     // Update issue with sprint reference
-    await Issue.findByIdAndUpdate(issueId, { sprint: params.id });
+    await Issue.findByIdAndUpdate(issueId, { sprint: resolvedParams.key });
 
     // Add issue to sprint's issues array if not already present
     if (!sprint.issues.includes(issueId)) {
@@ -69,7 +70,7 @@ export async function POST(
 // Remove issue from sprint
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -88,7 +89,7 @@ export async function DELETE(
 
     const { searchParams } = new URL(request.url);
     const issueId = searchParams.get("issueId");
-    
+
     if (!issueId) {
       return NextResponse.json(
         { error: "Issue ID is required" },
@@ -98,7 +99,8 @@ export async function DELETE(
 
     await connectDB();
 
-    const sprint = await Sprint.findById(params.id);
+    const resolvedParams = await params;
+    const sprint = await Sprint.findById(resolvedParams.key);
     if (!sprint) {
       return NextResponse.json({ error: "Sprint not found" }, { status: 404 });
     }
@@ -107,12 +109,12 @@ export async function DELETE(
     await Issue.findByIdAndUpdate(issueId, { $unset: { sprint: 1 } });
 
     // Remove issue from sprint's issues array
-    sprint.issues = sprint.issues.filter(
-      (id) => id.toString() !== issueId
-    );
+    sprint.issues = sprint.issues.filter((id) => id.toString() !== issueId);
     await sprint.save();
 
-    return NextResponse.json({ message: "Issue removed from sprint successfully" });
+    return NextResponse.json({
+      message: "Issue removed from sprint successfully",
+    });
   } catch (error) {
     console.error("Error removing issue from sprint:", error);
     return NextResponse.json(

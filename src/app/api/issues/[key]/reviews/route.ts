@@ -20,7 +20,7 @@ function isObjectId(str: string): boolean {
 // POST /api/issues/[key]/reviews - Create review for an issue
 export async function POST(
   request: NextRequest,
-  { params }: { params: { key: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -84,7 +84,7 @@ export async function POST(
 // GET /api/issues/[key]/reviews - List reviews for an issue
 export async function GET(
   request: NextRequest,
-  { params }: { params: { key: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);

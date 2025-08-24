@@ -21,7 +21,7 @@ async function resolveIssueReference(reference: string) {
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { key: string; userId: string } }
+  { params }: { params: Promise<{ key: string; userId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -31,14 +31,15 @@ export async function DELETE(
 
     await connectToDb();
 
-    const issue = await resolveIssueReference(params.key);
+    const resolvedParams = await params;
+    const issue = await resolveIssueReference(resolvedParams.key);
     if (!issue) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });
     }
 
     // Remove from watchers
     await Issue.findByIdAndUpdate(issue._id, {
-      $pull: { watchers: params.userId },
+      $pull: { watchers: resolvedParams.userId },
     });
 
     // Log activity
@@ -49,7 +50,7 @@ export async function DELETE(
       at: new Date(),
       meta: {
         action: "unwatch",
-        targetUserId: params.userId,
+        targetUserId: resolvedParams.userId,
       },
     });
 

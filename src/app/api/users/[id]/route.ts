@@ -4,9 +4,9 @@ import { authOptions } from "@/lib/auth";
 import { AuthUtils } from "@/lib/auth-utils";
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // GET /api/users/[id] - Get user by ID

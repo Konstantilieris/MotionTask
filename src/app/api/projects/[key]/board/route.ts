@@ -53,7 +53,7 @@ const BOARD_COLUMNS: BoardColumn[] = [
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { key: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);

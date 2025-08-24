@@ -6,7 +6,7 @@ import Issue from "@/models/Issue";
 // GET /api/issues/[key]/activities - Get all activities for an issue
 export async function GET(
   request: NextRequest,
-  { params }: { params: { key: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     await connectToDb();
@@ -44,7 +44,7 @@ export async function GET(
 // POST /api/issues/[key]/activities - Create a new activity
 export async function POST(
   request: NextRequest,
-  { params }: { params: { key: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     await connectToDb();

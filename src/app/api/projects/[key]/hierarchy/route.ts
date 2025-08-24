@@ -8,7 +8,7 @@ import { AuthUtils } from "@/lib/auth-utils";
 // Get hierarchical view of issues (epics with stories and subtasks)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { key: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,9 +22,9 @@ export async function GET(
     }
 
     await connectDB();
-
+    const resolvedParams = await params;
     // Find the project first
-    const project = await Issue.findOne({ key: params.key })
+    const project = await Issue.findOne({ key: resolvedParams.key })
       .populate("project")
       .select("project");
 

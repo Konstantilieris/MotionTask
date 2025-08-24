@@ -10,7 +10,7 @@ export const dynamic = "force-static";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { key: string; sprintId: string } }
+  { params }: { params: Promise<{ key: string; sprintId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -24,11 +24,11 @@ export async function GET(
     }
 
     const db = await getDb();
-
+    const paramsResolved = await params;
     // Get project to check access
     const project = await db
       .collection("projects")
-      .findOne({ key: params.key });
+      .findOne({ key: paramsResolved.key });
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
@@ -41,7 +41,11 @@ export async function GET(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    const data = await burndownForSprint(db, params.key, params.sprintId);
+    const data = await burndownForSprint(
+      db,
+      paramsResolved.key,
+      paramsResolved.sprintId
+    );
     return NextResponse.json(data);
   } catch (error) {
     console.error("Error in sprint burndown:", error);

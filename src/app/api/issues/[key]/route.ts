@@ -8,9 +8,9 @@ import { IssuesService } from "@/services/issues.service";
 import { Types } from "mongoose";
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     key: string;
-  };
+  }>;
 }
 
 // Helper function to check if a string is a valid ObjectId

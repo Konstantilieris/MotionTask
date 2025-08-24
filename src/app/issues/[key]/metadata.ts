@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { getIssueByKeyServer } from "@/lib/api/issues-server";
 
 interface MetadataProps {
-  params: { key: string };
+  params: Promise<{ key: string }>;
 }
 
 export async function generateMetadata({

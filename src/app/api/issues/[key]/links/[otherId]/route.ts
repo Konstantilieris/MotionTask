@@ -21,7 +21,7 @@ async function resolveIssueReference(reference: string) {
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { key: string; otherId: string } }
+  { params }: { params: Promise<{ key: string; otherId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -31,12 +31,13 @@ export async function DELETE(
 
     await connectToDb();
 
-    const issue = await resolveIssueReference(params.key);
+    const resolvedParams = await params;
+    const issue = await resolveIssueReference(resolvedParams.key);
     if (!issue) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });
     }
 
-    const otherIssue = await resolveIssueReference(params.otherId);
+    const otherIssue = await resolveIssueReference(resolvedParams.otherId);
     if (!otherIssue) {
       return NextResponse.json(
         { error: "Linked issue not found" },
