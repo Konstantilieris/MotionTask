@@ -36,7 +36,7 @@ This project has been configured with NextAuth.js for authentication using JWT s
    Update `.env.local`:
 
    ```
-   NEXTAUTH_URL=http://localhost:3000
+   CreateIssueModal=http://localhost:3000
    NEXTAUTH_SECRET=your-generated-secret-here
    ```
 

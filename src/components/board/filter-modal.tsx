@@ -76,9 +76,16 @@ export default function FilterModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      size="2xl"
+      size="full"
       scrollBehavior="inside"
       placement="center"
+      classNames={{
+        base: "mx-2 my-2 sm:mx-4 sm:my-4 max-w-3xl",
+        wrapper: "items-start sm:items-center justify-center",
+        body: "p-4 sm:p-6 max-h-[80vh]",
+        header: "p-4 sm:p-6 pb-2 sm:pb-3",
+        footer: "p-4 sm:p-6 pt-2 sm:pt-3",
+      }}
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">

@@ -26,11 +26,13 @@ import CreateIssueModal from "../create-issue-modal";
 
 interface EnhancedKanbanBoardProps {
   projectKey: string;
+  projectId: string;
   initialData?: BoardPayload;
 }
 
 export default function EnhancedKanbanBoard({
   projectKey,
+  projectId,
   initialData,
 }: EnhancedKanbanBoardProps) {
   const [boardData, setBoardData] = useState<BoardPayload | null>(
@@ -93,20 +95,20 @@ export default function EnhancedKanbanBoard({
       const lastCreated = localStorage.getItem("lastIssueCreated");
       if (lastCreated) {
         const timestamp = parseInt(lastCreated);
-        // If created within last 5 seconds, refresh
-        if (Date.now() - timestamp < 5000) {
-          loadBoardData();
+        // If created within last 3 seconds, refresh (reduced from 5 seconds)
+        if (Date.now() - timestamp < 3000) {
+          // Add a small delay to prevent interference with drag operations
+          setTimeout(() => loadBoardData(), 200);
           localStorage.removeItem("lastIssueCreated");
         }
       }
     };
 
+    // Only listen to storage events, remove focus listener to reduce unnecessary refreshes
     window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("focus", handleStorageChange);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("focus", handleStorageChange);
     };
   }, [loadBoardData]);
 
@@ -192,7 +194,20 @@ export default function EnhancedKanbanBoard({
       // Check if dropped on a column
       const targetColumn = boardData.columns.find((col) => col.id === overId);
       if (targetColumn && targetColumn.id !== activeIssue.status) {
-        // Move to different column - inline implementation to avoid dependency issues
+        // Optimistic update first
+        setBoardData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            issues: prev.issues.map((issue) =>
+              issue.id === activeIssue.id
+                ? { ...issue, status: targetColumn.id }
+                : issue
+            ),
+          };
+        });
+
+        // Then make the API call
         try {
           const response = await fetch("/api/issues/move", {
             method: "POST",
@@ -205,22 +220,22 @@ export default function EnhancedKanbanBoard({
 
           if (!response.ok) throw new Error("Failed to move issue");
 
-          // Optimistic update
+          // Only refresh on success to get any server-side updates (like position adjustments)
+          setTimeout(() => loadBoardData(), 100);
+        } catch (error) {
+          console.error("Error moving issue:", error);
+          // Revert optimistic update on error
           setBoardData((prev) => {
             if (!prev) return prev;
-
             return {
               ...prev,
               issues: prev.issues.map((issue) =>
                 issue.id === activeIssue.id
-                  ? { ...issue, status: targetColumn.id }
+                  ? { ...issue, status: activeIssue.status }
                   : issue
               ),
             };
           });
-        } catch (error) {
-          console.error("Error moving issue:", error);
-          loadBoardData();
         }
         return;
       }
@@ -228,6 +243,7 @@ export default function EnhancedKanbanBoard({
       // Check if dropped on another issue (for reordering)
       const targetIssue = boardData.issues.find((issue) => issue.id === overId);
       if (targetIssue && targetIssue.status === activeIssue.status) {
+        // For reordering, we'll do the API call first since position calculation is complex
         try {
           const response = await fetch("/api/issues/reorder", {
             method: "POST",
@@ -240,7 +256,9 @@ export default function EnhancedKanbanBoard({
           });
 
           if (!response.ok) throw new Error("Failed to reorder issue");
-          loadBoardData();
+
+          // Delay the refresh slightly to make it less jarring
+          setTimeout(() => loadBoardData(), 50);
         } catch (error) {
           console.error("Error reordering issue:", error);
         }
@@ -266,7 +284,9 @@ export default function EnhancedKanbanBoard({
           );
 
           if (!response.ok) throw new Error("Failed to reparent issue");
-          loadBoardData();
+
+          // Delay the refresh for reparenting as well
+          setTimeout(() => loadBoardData(), 100);
         } catch (error) {
           console.error("Error reparenting issue:", error);
         }
@@ -390,7 +410,7 @@ export default function EnhancedKanbanBoard({
               swimlane={swimlane}
               hoveredParentId={hoveredParentId}
               onHoverParent={setHoveredParentId}
-              projectKey={projectKey}
+              projectId={projectId}
               onIssueUpdate={loadBoardData}
             />
           ))}

@@ -113,9 +113,16 @@ export default function CreateProjectModal() {
     <Modal
       isOpen={isModalOpen}
       onClose={handleClose}
-      className="dark h-[50vh] font-sans"
-      size="2xl"
+      className="dark font-sans"
+      size="full"
       backdrop="blur"
+      classNames={{
+        base: "mx-2 my-2 sm:mx-4 sm:my-4 max-w-4xl",
+        wrapper: "items-start sm:items-center justify-center",
+        body: "p-4 sm:p-6 max-h-[70vh] sm:max-h-[80vh]",
+        header: "p-4 sm:p-6 pb-2 sm:pb-3",
+        footer: "p-4 sm:p-6 pt-2 sm:pt-3",
+      }}
     >
       <ModalContent>
         <form onSubmit={handleSubmit}>
@@ -149,11 +156,11 @@ export default function CreateProjectModal() {
               classNames={{
                 input: "text-white",
                 label: "text-gray-300",
-                innerWrapper: "h-80",
+                innerWrapper: "h-32 sm:h-48 md:h-80",
               }}
             />
 
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Select
                 label="Status"
                 color="success"

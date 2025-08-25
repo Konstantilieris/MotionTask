@@ -37,7 +37,10 @@ export default async function ProjectPage({
         <FilterSummary />
 
         <div className="flex-1 overflow-hidden min-h-0">
-          <EnhancedKanbanBoard projectKey={project.key} />
+          <EnhancedKanbanBoard
+            projectKey={project.key}
+            projectId={project._id}
+          />
         </div>
       </div>
     );

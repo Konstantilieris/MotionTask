@@ -68,25 +68,27 @@ function AuthErrorContent() {
 
 export default function AuthError() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 to-pink-100 px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="pb-4">
-            <div className="flex flex-col items-center space-y-2 text-center">
-              <div className="rounded-full bg-red-100 p-3">
-                <Icon
-                  icon="solar:danger-triangle-bold"
-                  className="h-8 w-8 text-red-600"
-                />
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 to-pink-100 px-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="pb-4">
+              <div className="flex flex-col items-center space-y-2 text-center">
+                <div className="rounded-full bg-red-100 p-3">
+                  <Icon
+                    icon="solar:danger-triangle-bold"
+                    className="h-8 w-8 text-red-600"
+                  />
+                </div>
+                <h1 className="text-2xl font-semibold tracking-tight text-red-900">
+                  Loading...
+                </h1>
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-red-900">
-                Loading...
-              </h1>
-            </div>
-          </CardHeader>
-        </Card>
-      </div>
-    }>
+            </CardHeader>
+          </Card>
+        </div>
+      }
+    >
       <AuthErrorContent />
     </Suspense>
   );

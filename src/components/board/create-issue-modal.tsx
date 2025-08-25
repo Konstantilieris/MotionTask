@@ -237,8 +237,15 @@ export default function CreateIssueModal() {
       onClose={handleClose}
       className="dark font-sans"
       placement="top-center"
-      size="4xl"
+      size="full"
       backdrop="blur"
+      classNames={{
+        base: "mx-2 my-2 sm:mx-4 sm:my-4 max-w-7xl",
+        wrapper: "items-start sm:items-center justify-center",
+        body: "p-4 sm:p-6",
+        header: "p-4 sm:p-6 pb-2 sm:pb-3",
+        footer: "p-4 sm:p-6 pt-2 sm:pt-3",
+      }}
     >
       <ModalContent>
         <form onSubmit={handleSubmit}>
@@ -270,11 +277,11 @@ export default function CreateIssueModal() {
               classNames={{
                 input: "text-white",
                 label: "text-gray-300",
-                innerWrapper: "h-60",
+                innerWrapper: "h-32 sm:h-48 md:h-60",
               }}
             />
 
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Select
                 label="Type"
                 placeholder="Select type"
@@ -322,7 +329,7 @@ export default function CreateIssueModal() {
               </Select>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Select
                 label="Status"
                 placeholder="Select status"

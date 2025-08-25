@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { AuthUtils } from "@/lib/auth-utils";
 import connectDB from "@/lib/mongodb";
-import Project from "@/models/Project";
+import Project, { IProject } from "@/models/Project";
+import Issue from "@/models/Issue";
 import { Types } from "mongoose";
 
 function isObjectId(str: string): boolean {
@@ -25,7 +26,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const resolvedParams = await params;
-    const { key } = resolvedParams;
+    let { key } = resolvedParams;
+
+    console.log("GET - Original key from params:", key);
+
+    // Decode URL-encoded characters (e.g., %CE%A6 -> Φ)
+    try {
+      const decodedKey = decodeURIComponent(key);
+      console.log("GET - Decoded key:", decodedKey);
+      key = decodedKey;
+    } catch (error) {
+      // If decoding fails, use the original key
+      console.warn("GET - Failed to decode project key:", key, error);
+    }
+
+    console.log("GET - Final key for database query:", key);
+
     const currentUser = await AuthUtils.getUserById(session.user.id);
     if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -86,7 +102,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const resolvedParams = await params;
-    const { key } = resolvedParams;
+    let { key } = resolvedParams;
+
+    // Decode URL-encoded characters (e.g., %CE%A6 -> Φ)
+    try {
+      key = decodeURIComponent(key);
+    } catch (error) {
+      // If decoding fails, use the original key
+      console.warn("Failed to decode project key:", key, error);
+    }
+
     const { name, description, status, priority } = await request.json();
 
     await connectDB();
@@ -174,7 +199,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     const resolvedParams = await params;
-    const { key } = resolvedParams;
+    let { key } = resolvedParams;
+
+    // Decode URL-encoded characters (e.g., %CE%A6 -> Φ)
+    try {
+      key = decodeURIComponent(key);
+    } catch (error) {
+      // If decoding fails, use the original key
+      console.warn("Failed to decode project key:", key, error);
+    }
 
     await connectDB();
 
@@ -198,9 +231,50 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Soft delete
-    project.deletedAt = new Date();
-    await project.save();
+    // Check if project has any issues before allowing deletion
+    const issueCount = await Issue.countDocuments({
+      project: project._id,
+      deletedAt: null,
+    });
+
+    if (issueCount > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete project with existing issues",
+          message: `This project contains ${issueCount} issue(s). Please delete or move all issues before deleting the project.`,
+          issueCount,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Alternative approach: Cascade delete all issues (uncomment if you want this behavior)
+    // if (issueCount > 0) {
+    //   await Issue.updateMany(
+    //     { project: project._id, deletedAt: null },
+    //     {
+    //       deletedAt: new Date(),
+    //       updatedBy: new Types.ObjectId(currentUser._id as string)
+    //     }
+    //   );
+    // }
+
+    // Soft delete using findOneAndUpdate to avoid validation issues
+    const updateData: Partial<IProject> = {
+      deletedAt: new Date(),
+      updatedBy: new Types.ObjectId(currentUser._id as string),
+    };
+
+    // Ensure createdBy is set if it's missing
+    if (!project.createdBy) {
+      updateData.createdBy = new Types.ObjectId(currentUser._id as string);
+    }
+
+    await Project.findByIdAndUpdate(
+      project._id,
+      updateData,
+      { runValidators: false } // Skip validation since we're doing a soft delete
+    );
 
     return NextResponse.json({ message: "Project deleted successfully" });
   } catch (error) {

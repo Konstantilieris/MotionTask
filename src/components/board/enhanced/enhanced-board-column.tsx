@@ -6,7 +6,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Card, CardHeader, CardBody, Badge, Chip } from "@heroui/react";
+import { Card, CardHeader, CardBody, Chip } from "@heroui/react";
 import { Plus } from "lucide-react";
 import { ColumnState, SwimlaneType } from "@/types/board/types";
 import { useModalStore } from "@/lib/stores/modal-store";
@@ -19,7 +19,7 @@ interface EnhancedBoardColumnProps {
   swimlane: SwimlaneType;
   hoveredParentId?: string | null;
   onHoverParent?: (parentId: string | null) => void;
-  projectKey?: string; // Add project key for issue creation
+  projectId?: string; // Add project ID for issue creation
   onIssueUpdate?: () => void;
 }
 
@@ -112,7 +112,7 @@ export const EnhancedBoardColumn = memo<EnhancedBoardColumnProps>(
     swimlane,
     hoveredParentId,
     onHoverParent,
-    projectKey,
+    projectId,
     onIssueUpdate,
   }) => {
     const { openModal } = useModalStore();
@@ -154,7 +154,7 @@ export const EnhancedBoardColumn = memo<EnhancedBoardColumnProps>(
               onClick={() => {
                 openModal("issue-create", {
                   status: column.id,
-                  projectKey: projectKey,
+                  projectId: projectId,
                 });
               }}
             >
@@ -207,7 +207,7 @@ export const EnhancedBoardColumn = memo<EnhancedBoardColumnProps>(
                     onClick={() => {
                       openModal("issue-create", {
                         status: column.id,
-                        projectKey: projectKey,
+                        projectId: projectId,
                       });
                     }}
                   >

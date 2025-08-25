@@ -3,12 +3,6 @@
 @plugin '../lib/hero.ts';
 @source '../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
 @custom-variant dark (&:is(.dark *));
-@font-face {
-  font-family: "DD";
-  font-weight: 500;
-  font-display: block;
-  src: url(/dd.woff2) format("woff2");
-}
 
 ::selection {
   background: var(--color-white);

@@ -90,6 +90,16 @@ export interface IssuesByStatus {
 }
 
 export async function getProjectWithIssues(projectKey: string) {
+  // Decode URL-encoded characters (e.g., %CE%A6 -> Φ)
+  let decodedProjectKey = projectKey;
+  try {
+    decodedProjectKey = decodeURIComponent(projectKey);
+    console.log("Original projectKey:", projectKey);
+    console.log("Decoded projectKey:", decodedProjectKey);
+  } catch (error) {
+    console.warn("Failed to decode project key:", projectKey, error);
+  }
+
   const session = await getServerSession(authOptions);
   console.log("session:", session);
   if (!session?.user) {
@@ -114,7 +124,7 @@ export async function getProjectWithIssues(projectKey: string) {
 
   // Find project by key
   const project = (await Project.findOne({
-    key: projectKey,
+    key: decodedProjectKey,
     deletedAt: null,
   })
     .populate("team", "name slug")
