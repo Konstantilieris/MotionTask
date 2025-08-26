@@ -1,40 +1,6 @@
 import mongoose, { Schema, Types, Model, Document } from "mongoose";
 
-/* -------------------------------------------------// Compound unique index that allows duplicate keys for soft-deleted issues
-issueSchema.index(
-  { key: 1, deletedAt: 1 },
-  { 
-    unique: true,
-    partialFilterExpression: { deletedAt: null },
-    background: true
-  }
-);
-
-issueSchema.index({ project: 1, status: 1, position: 1 });
-issueSchema.index({ project: 1, type: 1 }); // For hierarchical queries
-issueSchema.index({ parent: 1 }); // For finding subtasks
-issueSchema.index({ epic: 1 }); // For finding stories under epic
-
-// Pre-save middleware to handle key generation and avoid duplicates
-issueSchema.pre("save", async function(next) {
-  if (this.isNew) {
-    try {
-      // Check for existing issues with same key that are not soft-deleted
-      const existingIssue = await Issue.findOne({ 
-        key: this.key, 
-        deletedAt: null 
-      });
-      
-      if (existingIssue) {
-        const error = new Error(`Issue with key ${this.key} already exists`);
-        return next(error);
-      }
-    } catch (error) {
-      return next(error);
-    }
-  }
-  next();
-});-------------
+/* ---------------------------------------------------------------------------
  *  Issue Schema
  * ---------------------------------------------------------------------------*/
 export const ISSUE_STATUS = ["backlog", "todo", "in-progress", "done"] as const;
@@ -120,7 +86,7 @@ const issueSchema = new Schema<IIssue>(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String },
-    key: { type: String, required: true, index: true },
+    key: { type: String, required: true },
     issueNumber: { type: Number, required: true },
     status: {
       type: String,
@@ -131,7 +97,7 @@ const issueSchema = new Schema<IIssue>(
     type: { type: String, enum: ISSUE_TYPE, default: "task" },
     priority: { type: String, enum: ISSUE_PRIORITY, default: "medium" },
     position: { type: Number, default: 0 },
-    rank: { type: String, default: "M", index: true }, // LexoRank for efficient ordering
+    rank: { type: String, default: "M" }, // LexoRank for efficient ordering
     labels: [{ type: String }],
     storyPoints: { type: Number },
     dueDate: { type: Date },
@@ -158,20 +124,78 @@ const issueSchema = new Schema<IIssue>(
   { timestamps: true }
 );
 
-// Compound unique index that allows duplicate keys for soft-deleted issues
+// Partial unique index on key (active issues only)
 issueSchema.index(
-  { key: 1, deletedAt: 1 },
-  {
-    unique: true,
-    partialFilterExpression: { deletedAt: null },
-  }
+  { key: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } }
 );
 
-issueSchema.index({ project: 1, status: 1, position: 1 });
-issueSchema.index({ project: 1, status: 1, rank: 1 }); // For LexoRank ordering
-issueSchema.index({ project: 1, type: 1 }); // For hierarchical queries
-issueSchema.index({ parent: 1 }); // For finding subtasks
-issueSchema.index({ epic: 1 }); // For finding stories under epic
+// Project-scoped numbering
+issueSchema.index({ project: 1, issueNumber: 1 }, { unique: true });
+
+// Ordering index using LexoRank
+issueSchema.index({ project: 1, status: 1, rank: 1 });
+
+// Hierarchical queries
+issueSchema.index({ project: 1, type: 1 });
+issueSchema.index({ parent: 1 });
+issueSchema.index({ epic: 1 });
+
+/* ---------------------------------------------------------------------------
+ *  Soft-delete safety middleware
+ * ---------------------------------------------------------------------------*/
+// Default all find queries to { deletedAt: null }
+issueSchema.pre(/^find/, function () {
+  // @ts-expect-error - Mongoose middleware context typing
+  this.where({ deletedAt: null });
+});
+
+// Handle aggregate queries to include soft-delete filter
+issueSchema.pre("aggregate", function () {
+  const pipeline = this.pipeline();
+  // @ts-expect-error - PipelineStage typing complexity
+  if (!pipeline.some((stage) => stage.$match?.deletedAt !== undefined)) {
+    pipeline.unshift({ $match: { deletedAt: null } });
+  }
+});
+
+/* ---------------------------------------------------------------------------
+ *  Hierarchy invariants validation
+ * ---------------------------------------------------------------------------*/
+issueSchema.pre("validate", function () {
+  // type: 'epic' → no parent, no epic
+  if (this.type === "epic") {
+    if (this.parent) {
+      throw new Error("Epic issues cannot have a parent");
+    }
+    if (this.epic) {
+      throw new Error("Epic issues cannot be linked to another epic");
+    }
+  }
+
+  // type: 'subtask' → must have parent; parent cannot be an epic
+  if (this.type === "subtask") {
+    if (!this.parent) {
+      throw new Error("Subtask must have a parent");
+    }
+    // Note: We can't validate parent type here without async lookup
+    // This should be validated at the service layer
+  }
+
+  // type: 'story' → may have epic; must NOT have parent
+  if (this.type === "story") {
+    if (this.parent) {
+      throw new Error("Story issues cannot have a parent");
+    }
+  }
+
+  // type: 'task'/'bug' → may have parent OR epic, but not both
+  if (this.type === "task" || this.type === "bug") {
+    if (this.parent && this.epic) {
+      throw new Error("Task/Bug issues cannot have both parent and epic");
+    }
+  }
+});
 
 /* ---------------------------------------------------------------------------
  *  Interface Extensions for Static Methods
@@ -180,21 +204,33 @@ interface IIssueModel extends Model<IIssue> {
   findEpicsWithStories(projectId: Types.ObjectId): Promise<IIssue[]>;
   findSubtasks(parentId: Types.ObjectId): Promise<IIssue[]>;
   findByEpic(epicId: Types.ObjectId): Promise<IIssue[]>;
+  createIssue(issueData: Partial<IIssue>): Promise<IIssue>;
 }
 
 /* ---------------------------------------------------------------------------
- *  Utility – Soft-delete middleware
+ *  Utility – Soft-delete middleware (REMOVED - replaced with proper pre hooks above)
  * ---------------------------------------------------------------------------*/
-function addNotDeletedQuery() {
-  // @ts-expect-error - Mongoose middleware context
-  this.where({ deletedAt: null });
-}
-
-issueSchema.pre(["find", "findOne", "findOneAndUpdate"], addNotDeletedQuery);
 
 /* ---------------------------------------------------------------------------
- *  Static Methods for Hierarchical Relationships
+ *  Static Methods for Hierarchical Relationships and Error Handling
  * ---------------------------------------------------------------------------*/
+issueSchema.statics.createIssue = async function (issueData: Partial<IIssue>) {
+  try {
+    const issue = new this(issueData);
+    return await issue.save();
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code: number }).code === 11000
+    ) {
+      throw new Error("Issue key already exists (active).");
+    }
+    throw error;
+  }
+};
+
 issueSchema.statics.findEpicsWithStories = async function (
   projectId: Types.ObjectId
 ) {
@@ -215,6 +251,7 @@ issueSchema.statics.findEpicsWithStories = async function (
         pipeline: [
           {
             $match: {
+              project: projectId, // Ensure same project
               deletedAt: null,
               type: { $in: ["story", "task", "bug"] },
             },
@@ -225,8 +262,50 @@ issueSchema.statics.findEpicsWithStories = async function (
               localField: "_id",
               foreignField: "parent",
               as: "subtasks",
-              pipeline: [{ $match: { deletedAt: null } }],
+              pipeline: [
+                {
+                  $match: {
+                    project: projectId, // Ensure same project
+                    deletedAt: null,
+                  },
+                },
+              ],
             },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "assignee",
+              foreignField: "_id",
+              as: "assigneeInfo",
+              pipeline: [
+                {
+                  $project: {
+                    name: 1,
+                    email: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "reporter",
+              foreignField: "_id",
+              as: "reporterInfo",
+              pipeline: [
+                {
+                  $project: {
+                    name: 1,
+                    email: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $sort: { rank: 1 },
           },
         ],
       },
@@ -237,6 +316,14 @@ issueSchema.statics.findEpicsWithStories = async function (
         localField: "assignee",
         foreignField: "_id",
         as: "assigneeInfo",
+        pipeline: [
+          {
+            $project: {
+              name: 1,
+              email: 1,
+            },
+          },
+        ],
       },
     },
     {
@@ -245,7 +332,18 @@ issueSchema.statics.findEpicsWithStories = async function (
         localField: "reporter",
         foreignField: "_id",
         as: "reporterInfo",
+        pipeline: [
+          {
+            $project: {
+              name: 1,
+              email: 1,
+            },
+          },
+        ],
       },
+    },
+    {
+      $sort: { rank: 1 },
     },
   ]);
 };
@@ -254,14 +352,14 @@ issueSchema.statics.findSubtasks = async function (parentId: Types.ObjectId) {
   return this.find({ parent: parentId })
     .populate("assignee", "name email")
     .populate("reporter", "name email")
-    .sort({ position: 1 });
+    .sort({ rank: 1 }); // Use rank instead of position
 };
 
 issueSchema.statics.findByEpic = async function (epicId: Types.ObjectId) {
   return this.find({ epic: epicId })
     .populate("assignee", "name email")
     .populate("reporter", "name email")
-    .sort({ type: 1, position: 1 }); // Stories first, then tasks, then bugs
+    .sort({ rank: 1 }); // Use rank for consistent ordering, no type sorting
 };
 
 export const Issue: IIssueModel =

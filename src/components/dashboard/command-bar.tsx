@@ -48,52 +48,17 @@ const CommandBar = ({ isOpen, onClose }: CommandBarProps) => {
 
     setIsLoading(true);
     try {
-      // Mock search results - in real app, this would call your search API
-      const mockResults: SearchResult[] = [
-        {
-          type: "issue" as const,
-          id: "PROJ-123",
-          title: "Implement user authentication",
-          subtitle: "In Progress • High Priority",
-          icon: "solar:bug-bold",
-          url: "/issues/PROJ-123",
-          status: "In Progress",
-        },
-        {
-          type: "project" as const,
-          id: "proj-1",
-          title: "Motion Task Management",
-          subtitle: "12 active issues",
-          icon: "solar:folder-bold",
-          url: "/projects/proj-1",
-        },
-        {
-          type: "sprint" as const,
-          id: "sprint-1",
-          title: "Sprint 2024-01",
-          subtitle: "Active • 5 days remaining",
-          icon: "solar:calendar-bold",
-          url: "/sprints/sprint-1",
-        },
-        {
-          type: "user" as const,
-          id: "user-1",
-          title: "John Doe",
-          subtitle: "Frontend Developer",
-          icon: "solar:user-bold",
-          url: "/users/user-1",
-          avatar: "https://i.pravatar.cc/40?u=john",
-        },
-      ].filter(
-        (result) =>
-          result.title.toLowerCase().includes(query.toLowerCase()) ||
-          result.subtitle?.toLowerCase().includes(query.toLowerCase())
-      );
+      // TODO: Replace with actual search API when implemented
+      // const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      // const data = await response.json();
+      // setSearchResults(data.results || []);
 
-      setSearchResults(mockResults);
+      // For now, show empty results
+      setSearchResults([]);
       setSelectedIndex(0);
     } catch (error) {
       console.error("Search failed:", error);
+      setSearchResults([]);
     } finally {
       setIsLoading(false);
     }

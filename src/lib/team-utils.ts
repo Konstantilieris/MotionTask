@@ -1,6 +1,6 @@
 import connectDB from "@/lib/mongodb";
 import Team, { ITeam } from "@/models/Team";
-import { ROLE } from "@/models/User";
+import { ROLE } from "@/types/roles";
 
 export class TeamUtils {
   static async createTeam(teamData: {

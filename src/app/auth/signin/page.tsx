@@ -65,6 +65,19 @@ function SignInForm() {
       } else {
         const session = await getSession();
         if (session) {
+          // Update last login timestamp
+          try {
+            await fetch("/api/auth/last-login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            });
+          } catch (error) {
+            console.error("Failed to update last login:", error);
+            // Don't show this error to user as it's not critical
+          }
+
           toast.dismiss();
           toast.success("Welcome back!");
           router.push("/main");
@@ -153,7 +166,8 @@ function SignInForm() {
           placeholder="Enter your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="shadow-input block h-10 w-full rounded-md border-0  px-4 py-1.5  placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 sm:text-sm sm:leading-6 bg-neutral-900 text-white"
+          disabled={isLoading}
+          className="shadow-input block h-10 w-full rounded-md border-0  px-4 py-1.5  placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 sm:text-sm sm:leading-6 bg-neutral-900 text-white disabled:opacity-50 disabled:cursor-not-allowed"
         />
 
         {/* Password Input */}
@@ -172,13 +186,15 @@ function SignInForm() {
             placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="shadow-input block h-10 w-full rounded-md border-0 px-4 py-1.5 pr-10 bg-neutral-900 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 sm:text-sm sm:leading-6 dark:bg-neutral-900 dark:text-white"
+            disabled={isLoading}
+            className="shadow-input block h-10 w-full rounded-md border-0 px-4 py-1.5 pr-10 bg-neutral-900 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 sm:text-sm sm:leading-6 dark:bg-neutral-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           />
           {isPasswordVisible && (
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-300 transition-colors"
+              disabled={isLoading}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -192,7 +208,7 @@ function SignInForm() {
         <button
           onClick={handleContinueClick}
           disabled={isLoading || (isPasswordVisible && (!email || !password))}
-          className="group/btn relative w-full rounded-lg  px-4 py-3  transition-opacity disabled:opacity-50  text-gray2 leading-2 bg-pink12"
+          className="group/btn relative w-full rounded-lg  px-4 py-3  transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-gray2 leading-2 bg-pink12"
         >
           <div className="absolute inset-0 h-full w-full transform opacity-0 transition duration-200 group-hover/btn:opacity-100">
             <div className="absolute -left-px -top-px h-4 w-4 rounded-tl-lg border-l-2 border-t-2  bg-transparent transition-all duration-200 group-hover/btn:-left-4 group-hover/btn:-top-4 border-white"></div>
@@ -200,7 +216,10 @@ function SignInForm() {
             <div className="absolute -bottom-px -left-px h-4 w-4 rounded-bl-lg border-b-2 border-l-2  bg-transparent transition-all duration-200 group-hover/btn:-bottom-4 group-hover/btn:-left-4 border-white"></div>
             <div className="absolute -bottom-px -right-px h-4 w-4 rounded-br-lg border-b-2 border-r-2  bg-transparent transition-all duration-200 group-hover/btn:-bottom-4 group-hover/btn:-right-4 border-white"></div>
           </div>
-          <span className="text-sm">
+          <span className="text-sm flex items-center justify-center">
+            {isLoading && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            )}
             {isLoading
               ? "Signing in..."
               : !isEmailVisible
@@ -213,12 +232,18 @@ function SignInForm() {
 
         <div className="mt-6 text-center text-sm text-neutral-400 ">
           Don&apos;t have an account?{" "}
-          <Link
-            href="/auth/signup"
-            className="font-medium text-gray-200 underline hover:no-underline dark:text-white"
-          >
-            Sign up
-          </Link>
+          {isLoading ? (
+            <span className="font-medium text-gray-500 cursor-not-allowed">
+              Sign up
+            </span>
+          ) : (
+            <Link
+              href="/auth/signup"
+              className="font-medium text-gray-200 underline hover:no-underline dark:text-white"
+            >
+              Sign up
+            </Link>
+          )}
         </div>
       </form>
     </section>

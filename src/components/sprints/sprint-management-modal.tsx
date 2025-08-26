@@ -196,33 +196,39 @@ const SprintManagementModal = ({
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        size="full"
+        size="5xl"
         scrollBehavior="inside"
         placement="center"
+        className="dark"
+        backdrop="blur"
         classNames={{
-          base: "mx-2 my-2 sm:mx-4 sm:my-4 max-w-6xl",
-          wrapper: "items-start sm:items-center justify-center",
-          body: "p-4 sm:p-6 max-h-[85vh]",
-          header: "p-4 sm:p-6 pb-2 sm:pb-3",
-          footer: "p-4 sm:p-6 pt-2 sm:pt-3",
+          base: "mx-2 my-2 sm:mx-4 sm:my-4 max-h-[95vh] bg-gray-900/95 backdrop-blur-md border border-white/10",
+          wrapper: "items-center justify-center",
+          body: "p-4 sm:p-6 max-h-[80vh] bg-gray-900/50",
+          header: "p-4 sm:p-6 pb-2 border-b border-white/10",
+          footer: "p-4 sm:p-6 pt-2 border-t border-white/10",
         }}
       >
-        <ModalContent>
+        <ModalContent className="bg-gray-900/95 backdrop-blur-md">
           <ModalHeader className="flex flex-col gap-1">
             <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold">Sprint Management</h2>
+              <div className="flex items-center gap-3">
+                <Activity className="h-5 w-5 text-blue-400" />
+                <h2 className="text-xl font-semibold text-white tracking-wide">
+                  Sprint Management
+                </h2>
               </div>
               <Button
                 color="primary"
+                variant="bordered"
                 startContent={<Plus className="h-4 w-4" />}
                 onPress={() => setShowCreateModal(true)}
+                className="border-blue-400/30 hover:border-blue-400/60 text-blue-400 hover:text-blue-300 bg-blue-400/5 hover:bg-blue-400/10 mr-4"
               >
                 Create Sprint
               </Button>
             </div>
-            <p className="text-sm text-gray-500 font-normal">
+            <p className="text-sm text-gray-400 font-normal">
               Manage your project sprints and track progress
             </p>
           </ModalHeader>
@@ -231,28 +237,30 @@ const SprintManagementModal = ({
             {loading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <Card key={i}>
+                  <Card key={i} className="bg-white/5 border border-white/10">
                     <CardBody>
-                      <Skeleton className="h-6 w-3/4 mb-2" />
-                      <Skeleton className="h-4 w-1/2 mb-4" />
-                      <Skeleton className="h-2 w-full" />
+                      <Skeleton className="h-6 w-3/4 mb-2 bg-gray-700" />
+                      <Skeleton className="h-4 w-1/2 mb-4 bg-gray-700" />
+                      <Skeleton className="h-2 w-full bg-gray-700" />
                     </CardBody>
                   </Card>
                 ))}
               </div>
             ) : sprints.length === 0 ? (
               <div className="text-center py-12">
-                <Activity className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-white mb-2">
                   No sprints yet
                 </h3>
-                <p className="text-gray-500 mb-4">
+                <p className="text-gray-400 mb-4">
                   Create your first sprint to start organizing your work
                 </p>
                 <Button
                   color="primary"
+                  variant="bordered"
                   startContent={<Plus className="h-4 w-4" />}
                   onPress={() => setShowCreateModal(true)}
+                  className="border-blue-400/30 hover:border-blue-400/60 text-blue-400 hover:text-blue-300 bg-blue-400/5 hover:bg-blue-400/10"
                 >
                   Create First Sprint
                 </Button>
@@ -262,31 +270,31 @@ const SprintManagementModal = ({
                 {sprints.map((sprint) => (
                   <Card
                     key={sprint._id}
-                    className="hover:shadow-md transition-shadow"
+                    className="bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-200 backdrop-blur-sm"
                   >
                     <CardBody className="p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-semibold">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-white">
                               {sprint.name}
                             </h3>
                             <Chip
                               size="sm"
                               color={getStatusColor(sprint.status)}
                               variant="flat"
-                              className="capitalize"
+                              className="capitalize bg-opacity-20 border border-current/20"
                             >
                               {sprint.status}
                             </Chip>
                           </div>
                           {sprint.goal && (
-                            <p className="text-gray-600 text-sm mb-2">
+                            <p className="text-gray-300 text-sm mb-2 font-medium">
                               {sprint.goal}
                             </p>
                           )}
                           {sprint.description && (
-                            <p className="text-gray-500 text-sm">
+                            <p className="text-gray-400 text-sm">
                               {sprint.description}
                             </p>
                           )}
@@ -299,23 +307,24 @@ const SprintManagementModal = ({
                               isIconOnly
                               size="sm"
                               variant="light"
-                              className="text-gray-400 hover:text-gray-600"
+                              className="text-gray-400 hover:text-gray-200 hover:bg-white/10"
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownTrigger>
-                          <DropdownMenu>
+                          <DropdownMenu className="bg-gray-800 border border-white/20">
                             <DropdownItem
                               key="edit"
                               startContent={<Edit className="h-4 w-4" />}
                               onPress={() => handleEditSprint(sprint)}
+                              className="text-gray-200 hover:text-white hover:bg-white/10"
                             >
                               Edit Sprint
                             </DropdownItem>
                             <DropdownItem
                               key="delete"
                               startContent={<Trash2 className="h-4 w-4" />}
-                              className="text-danger"
+                              className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
                               color="danger"
                               onPress={() => handleDeleteSprint(sprint._id)}
                               isDisabled={deletingSprint === sprint._id}
@@ -332,10 +341,10 @@ const SprintManagementModal = ({
                       {sprint.issues.length > 0 && (
                         <div className="mb-4">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">
+                            <span className="text-sm font-medium text-gray-300">
                               Progress
                             </span>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-gray-400">
                               {
                                 sprint.issues.filter((i) => i.status === "done")
                                   .length
@@ -347,6 +356,11 @@ const SprintManagementModal = ({
                             value={calculateProgress(sprint)}
                             color="success"
                             size="sm"
+                            className="w-full"
+                            classNames={{
+                              base: "bg-gray-700/50",
+                              indicator: "bg-green-400",
+                            }}
                           />
                         </div>
                       )}
@@ -355,21 +369,21 @@ const SprintManagementModal = ({
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-600">
+                          <span className="text-gray-300">
                             {formatDate(sprint.startDate)} -{" "}
                             {formatDate(sprint.endDate)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Target className="h-4 w-4 text-gray-400" />
-                          <span className="text-gray-600">
+                          <span className="text-gray-300">
                             {sprint.issues.length} issues
                           </span>
                         </div>
                         {sprint.capacity && (
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-gray-400" />
-                            <span className="text-gray-600">
+                            <span className="text-gray-300">
                               {sprint.capacity} SP capacity
                             </span>
                           </div>
@@ -377,7 +391,7 @@ const SprintManagementModal = ({
                         {sprint.velocity && (
                           <div className="flex items-center gap-2">
                             <Activity className="h-4 w-4 text-gray-400" />
-                            <span className="text-gray-600">
+                            <span className="text-gray-300">
                               {sprint.velocity} SP velocity
                             </span>
                           </div>

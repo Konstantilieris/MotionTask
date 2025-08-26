@@ -53,11 +53,25 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     let project;
     if (isObjectId(key)) {
       project = await Project.findById(key)
-        .populate("team", "name slug")
+        .populate({
+          path: "team",
+          select: "name slug members",
+          populate: {
+            path: "members",
+            select: "name email role createdAt",
+          },
+        })
         .populate("createdBy", "name email");
     } else {
       project = await Project.findOne({ key })
-        .populate("team", "name slug")
+        .populate({
+          path: "team",
+          select: "name slug members",
+          populate: {
+            path: "members",
+            select: "name email role createdAt",
+          },
+        })
         .populate("createdBy", "name email");
     }
 
@@ -164,7 +178,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         runValidators: true,
       }
     )
-      .populate("team", "name slug")
+      .populate({
+        path: "team",
+        select: "name slug members",
+        populate: {
+          path: "members",
+          select: "name email role createdAt",
+        },
+      })
       .populate("createdBy", "name email");
 
     return NextResponse.json({

@@ -56,7 +56,7 @@ export default function TeamManagement({
   const [email, setEmail] = useState("");
   const [selectedRole, setSelectedRole] = useState("member");
   const [isLoading, setIsLoading] = useState(false);
-
+  console.log("Team data:", team);
   const fetchAvailableUsers = useCallback(async () => {
     try {
       const response = await fetch(`/api/teams/${team._id}/available-users`);
@@ -230,23 +230,26 @@ export default function TeamManagement({
         classNames={{
           wrapper:
             "bg-white/10 backdrop-blur-md border border-white/20 rounded-lg",
-          th: "bg-gray-50/10 text-gray-300",
-          td: "text-gray-100",
+          th: "bg-gray-50/10 text-gray-300 font-medium",
+          td: "text-white",
+          table: "min-w-full",
         }}
       >
         <TableHeader>
-          <TableColumn>MEMBER</TableColumn>
-          <TableColumn>ROLE</TableColumn>
-          <TableColumn>JOINED</TableColumn>
-          <TableColumn align="end">ACTIONS</TableColumn>
+          <TableColumn className="text-gray-300">MEMBER</TableColumn>
+          <TableColumn className="text-gray-300">ROLE</TableColumn>
+          <TableColumn className="text-gray-300">JOINED</TableColumn>
+          <TableColumn align="end" className="text-gray-300">
+            ACTIONS
+          </TableColumn>
         </TableHeader>
         <TableBody>
           {team.members.map((member) => (
-            <TableRow key={member._id}>
+            <TableRow key={member._id} className="border-b border-white/10">
               <TableCell>
                 <div>
-                  <div className="font-medium text-gray-100">{member.name}</div>
-                  <div className="text-sm text-gray-400">{member.email}</div>
+                  <div className="font-medium text-white">{member.name}</div>
+                  <div className="text-sm text-gray-300">{member.email}</div>
                 </div>
               </TableCell>
               <TableCell>
@@ -259,11 +262,12 @@ export default function TeamManagement({
                       <Crown className="h-3 w-3" />
                     ) : undefined
                   }
+                  className="text-white"
                 >
                   {member.role}
                 </Chip>
               </TableCell>
-              <TableCell className="text-gray-400">
+              <TableCell className="text-gray-300">
                 {new Date(member.createdAt).toLocaleDateString()}
               </TableCell>
               <TableCell>
@@ -274,12 +278,15 @@ export default function TeamManagement({
                         isIconOnly
                         size="sm"
                         variant="light"
-                        className="text-gray-400 hover:text-gray-200"
+                        className="text-gray-400 hover:text-gray-200 hover:bg-white/10"
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownTrigger>
-                    <DropdownMenu aria-label="Member actions">
+                    <DropdownMenu
+                      aria-label="Member actions"
+                      className="bg-gray-800 border border-white/20"
+                    >
                       <DropdownItem
                         key="change-role"
                         startContent={<UserPlus className="h-4 w-4" />}
@@ -292,12 +299,13 @@ export default function TeamManagement({
                             handleRoleChange(member._id, newRole);
                           }
                         }}
+                        className="text-gray-200 hover:text-white hover:bg-white/10"
                       >
                         Change Role
                       </DropdownItem>
                       <DropdownItem
                         key="remove"
-                        className="text-danger"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
                         color="danger"
                         startContent={<UserMinus className="h-4 w-4" />}
                         onPress={() =>

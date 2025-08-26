@@ -186,10 +186,10 @@ export default function ProjectSettingsClient({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-black to-neutral-900 font-sans">
+    <div className="h-screen bg-gradient-to-br from-neutral-900 via-black to-neutral-900 font-sans flex flex-col overflow-hidden">
       {/* Header */}
       <motion.div
-        className="bg-black/30 backdrop-blur-lg border-b border-white/5 px-8 py-6"
+        className="bg-black/30 backdrop-blur-lg border-b border-white/5 px-8 py-6 flex-shrink-0"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -213,219 +213,222 @@ export default function ProjectSettingsClient({
         </div>
       </motion.div>
 
-      <motion.div
-        className="max-w-5xl mx-auto p-8 space-y-8"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* General Settings */}
-        <motion.div variants={itemVariants}>
-          <Card className="bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl">
-            <CardHeader className="pb-4">
-              <h2 className="text-xl font-light text-white tracking-wide">
-                General Settings
-              </h2>
-            </CardHeader>
-            <Divider className="bg-white/5" />
-            <CardBody className="pt-6">
-              <form onSubmit={handleSave} className="space-y-8">
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2, duration: 0.4 }}
-                >
-                  <Input
-                    label="Project Name"
-                    color="success"
-                    placeholder="Enter project name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    isRequired
-                    isDisabled={isLoading}
-                    variant="bordered"
-                    classNames={{
-                      input: "text-white text-base",
-                      label: "text-gray-300 text-sm",
-                      inputWrapper:
-                        "border-white/20 hover:border-white/40 focus-within:border-green-400/60 bg-white/5",
-                    }}
-                  />
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3, duration: 0.4 }}
-                >
-                  <Textarea
-                    label="Description"
-                    color="success"
-                    placeholder="Enter project description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    isDisabled={isLoading}
-                    variant="bordered"
-                    minRows={3}
-                    classNames={{
-                      input: "text-white text-base",
-                      label: "text-gray-300 text-sm",
-                      inputWrapper:
-                        "border-white/20 hover:border-white/40 focus-within:border-green-400/60 bg-white/5",
-                    }}
-                  />
-                </motion.div>
-
-                <motion.div
-                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.4 }}
-                >
-                  <Select
-                    label="Status"
-                    color="success"
-                    placeholder="Select status"
-                    selectedKeys={[status]}
-                    onSelectionChange={(keys) =>
-                      setStatus(Array.from(keys)[0] as string)
-                    }
-                    isDisabled={isLoading}
-                    variant="bordered"
-                    classNames={{
-                      label: "text-gray-300 text-sm",
-                      value:
-                        "text-white group-data-[has-value=true]:text-light-200",
-                      trigger:
-                        "border-white/20 hover:border-white/40 bg-white/5 text-white",
-
-                      popoverContent:
-                        "bg-neutral-800/95 backdrop-blur-xl border-white/20",
-                      listboxWrapper: "bg-neutral-800/95",
-                      listbox: "bg-transparent",
-                    }}
-                  >
-                    {statusOptions.map((option) => (
-                      <SelectItem
-                        key={option.key}
-                        className="text-white hover:bg-white/10"
-                        textValue={option.label}
-                      >
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </Select>
-
-                  <Select
-                    label="Priority"
-                    color="success"
-                    placeholder="Select priority"
-                    selectedKeys={[priority]}
-                    onSelectionChange={(keys) =>
-                      setPriority(Array.from(keys)[0] as string)
-                    }
-                    isDisabled={isLoading}
-                    variant="bordered"
-                    classNames={{
-                      label: "text-gray-300",
-                      value:
-                        "text-white group-data-[has-value=true]:text-light-200 ",
-
-                      base: "bg-neutral-900 text-white rounded-lg",
-                      popoverContent: "bg-neutral-700 text-white rounded-lg",
-                      listboxWrapper: "bg-neutral-900 text-white rounded-lg",
-                      listbox: "bg-neutral-900 text-white rounded-lg",
-                    }}
-                  >
-                    {priorityOptions.map((option) => (
-                      <SelectItem
-                        key={option.key}
-                        color="default"
-                        variant="bordered"
-                      >
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                </motion.div>
-
-                <motion.div
-                  className="flex justify-end pt-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.4 }}
-                >
-                  <Button
-                    type="submit"
-                    color="success"
-                    variant="ghost"
-                    size="lg"
-                    startContent={<Save className="h-4 w-4" />}
-                    isLoading={isLoading}
-                    className="border-green-400/30 hover:border-green-400/60 hover:bg-green-400/10 transition-all duration-300"
-                  >
-                    {isLoading ? "Saving..." : "Save Changes"}
-                  </Button>
-                </motion.div>
-              </form>
-            </CardBody>
-          </Card>
-        </motion.div>
-
-        {/* Team Management */}
-        {userRole === "admin" && (
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        <motion.div
+          className="max-w-5xl mx-auto p-8 space-y-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {/* General Settings */}
           <motion.div variants={itemVariants}>
             <Card className="bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl">
-              <CardBody className="p-0">
-                <TeamManagement
-                  team={project.team}
-                  userRole={userRole}
-                  onTeamUpdate={() => router.refresh()}
-                />
-              </CardBody>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Danger Zone */}
-        {userRole === "admin" && (
-          <motion.div variants={itemVariants}>
-            <Card className="bg-red-500/5 backdrop-blur-xl border border-red-500/20 shadow-2xl">
               <CardHeader className="pb-4">
-                <h2 className="text-xl font-light text-red-400 tracking-wide">
-                  Danger Zone
+                <h2 className="text-xl font-light text-white tracking-wide">
+                  General Settings
                 </h2>
               </CardHeader>
-              <Divider className="bg-red-500/20" />
+              <Divider className="bg-white/5" />
               <CardBody className="pt-6">
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-white font-medium text-lg">
-                      Delete Project
-                    </h3>
-                    <p className="text-gray-400 text-sm mt-2 leading-relaxed">
-                      Once you delete a project, there is no going back. All
-                      associated issues, comments, and project data will be
-                      permanently removed.
-                    </p>
-                  </div>
-                  <Button
-                    color="danger"
-                    variant="ghost"
-                    size="lg"
-                    startContent={<Trash2 className="h-4 w-4" />}
-                    onPress={handleDelete}
-                    isLoading={isDeleting}
-                    className="border-red-500/30 hover:border-red-500/60 hover:bg-red-500/10 transition-all duration-300"
+                <form onSubmit={handleSave} className="space-y-8">
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2, duration: 0.4 }}
                   >
-                    {isDeleting ? "Deleting..." : "Delete Project"}
-                  </Button>
-                </div>
+                    <Input
+                      label="Project Name"
+                      color="success"
+                      placeholder="Enter project name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      isRequired
+                      isDisabled={isLoading}
+                      variant="bordered"
+                      classNames={{
+                        input: "text-white text-base",
+                        label: "text-gray-300 text-sm",
+                        inputWrapper:
+                          "border-white/20 hover:border-white/40 focus-within:border-green-400/60 bg-white/5",
+                      }}
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3, duration: 0.4 }}
+                  >
+                    <Textarea
+                      label="Description"
+                      color="success"
+                      placeholder="Enter project description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      isDisabled={isLoading}
+                      variant="bordered"
+                      minRows={3}
+                      classNames={{
+                        input: "text-white text-base",
+                        label: "text-gray-300 text-sm",
+                        inputWrapper:
+                          "border-white/20 hover:border-white/40 focus-within:border-green-400/60 bg-white/5",
+                      }}
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.4 }}
+                  >
+                    <Select
+                      label="Status"
+                      color="success"
+                      placeholder="Select status"
+                      selectedKeys={[status]}
+                      onSelectionChange={(keys) =>
+                        setStatus(Array.from(keys)[0] as string)
+                      }
+                      isDisabled={isLoading}
+                      variant="bordered"
+                      classNames={{
+                        label: "text-gray-300 text-sm",
+                        value:
+                          "text-white group-data-[has-value=true]:text-light-200",
+                        trigger:
+                          "border-white/20 hover:border-white/40 bg-white/5 text-white",
+
+                        popoverContent:
+                          "bg-neutral-800/95 backdrop-blur-xl border-white/20",
+                        listboxWrapper: "bg-neutral-800/95",
+                        listbox: "bg-transparent",
+                      }}
+                    >
+                      {statusOptions.map((option) => (
+                        <SelectItem
+                          key={option.key}
+                          className="text-white hover:bg-white/10"
+                          textValue={option.label}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </Select>
+
+                    <Select
+                      label="Priority"
+                      color="success"
+                      placeholder="Select priority"
+                      selectedKeys={[priority]}
+                      onSelectionChange={(keys) =>
+                        setPriority(Array.from(keys)[0] as string)
+                      }
+                      isDisabled={isLoading}
+                      variant="bordered"
+                      classNames={{
+                        label: "text-gray-300",
+                        value:
+                          "text-white group-data-[has-value=true]:text-light-200 ",
+
+                        base: "bg-neutral-900 text-white rounded-lg",
+                        popoverContent: "bg-neutral-700 text-white rounded-lg",
+                        listboxWrapper: "bg-neutral-900 text-white rounded-lg",
+                        listbox: "bg-neutral-900 text-white rounded-lg",
+                      }}
+                    >
+                      {priorityOptions.map((option) => (
+                        <SelectItem
+                          key={option.key}
+                          color="default"
+                          variant="bordered"
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  </motion.div>
+
+                  <motion.div
+                    className="flex justify-end pt-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.4 }}
+                  >
+                    <Button
+                      type="submit"
+                      color="success"
+                      variant="ghost"
+                      size="lg"
+                      startContent={<Save className="h-4 w-4" />}
+                      isLoading={isLoading}
+                      className="border-green-400/30 hover:border-green-400/60 hover:bg-green-400/10 transition-all duration-300"
+                    >
+                      {isLoading ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </motion.div>
+                </form>
               </CardBody>
             </Card>
           </motion.div>
-        )}
-      </motion.div>
+
+          {/* Team Management */}
+          {userRole === "admin" && (
+            <motion.div variants={itemVariants}>
+              <Card className="bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl">
+                <CardBody className="p-0">
+                  <TeamManagement
+                    team={project.team}
+                    userRole={userRole}
+                    onTeamUpdate={() => router.refresh()}
+                  />
+                </CardBody>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Danger Zone */}
+          {userRole === "admin" && (
+            <motion.div variants={itemVariants}>
+              <Card className="bg-red-500/5 backdrop-blur-xl border border-red-500/20 shadow-2xl">
+                <CardHeader className="pb-4">
+                  <h2 className="text-xl font-light text-red-400 tracking-wide">
+                    Danger Zone
+                  </h2>
+                </CardHeader>
+                <Divider className="bg-red-500/20" />
+                <CardBody className="pt-6">
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-white font-medium text-lg">
+                        Delete Project
+                      </h3>
+                      <p className="text-gray-400 text-sm mt-2 leading-relaxed">
+                        Once you delete a project, there is no going back. All
+                        associated issues, comments, and project data will be
+                        permanently removed.
+                      </p>
+                    </div>
+                    <Button
+                      color="danger"
+                      variant="ghost"
+                      size="lg"
+                      startContent={<Trash2 className="h-4 w-4" />}
+                      onPress={handleDelete}
+                      isLoading={isDeleting}
+                      className="border-red-500/30 hover:border-red-500/60 hover:bg-red-500/10 transition-all duration-300"
+                    >
+                      {isDeleting ? "Deleting..." : "Delete Project"}
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
     </div>
   );
 }

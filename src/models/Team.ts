@@ -1,5 +1,5 @@
-import mongoose, { Schema, Types, Model, Document } from "mongoose";
-import { Role, ROLE } from "./User";
+import mongoose, { Schema, Document, Model, Types } from "mongoose";
+import { Role, ROLE } from "@/types/roles";
 
 /* ---------------------------------------------------------------------------
  *  Team Schema
@@ -19,11 +19,10 @@ export interface ITeam extends Document {
 
 const teamSchema = new Schema<ITeam>(
   {
-    name: { type: String, required: true, unique: true, trim: true },
+    name: { type: String, required: true, trim: true },
     slug: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       trim: true,
     },
@@ -40,6 +39,16 @@ const teamSchema = new Schema<ITeam>(
   { timestamps: true }
 );
 
+// Soft-delete-friendly unique indexes
+teamSchema.index(
+  { name: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } }
+);
+teamSchema.index(
+  { slug: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } }
+);
+
 /* ---------------------------------------------------------------------------
  *  Utility – Soft-delete middleware
  * ---------------------------------------------------------------------------*/
@@ -50,6 +59,21 @@ function addNotDeletedQuery() {
 }
 
 teamSchema.pre(["find", "findOne", "findOneAndUpdate"], addNotDeletedQuery);
+
+// Aggregate middleware for soft-delete
+teamSchema.pre("aggregate", function () {
+  const pipeline = this.pipeline();
+  if (
+    !pipeline.some(
+      (stage) =>
+        typeof (stage as { $match?: unknown }).$match !== "undefined" &&
+        (stage as { $match?: { deletedAt?: unknown } }).$match?.deletedAt !==
+          undefined
+    )
+  ) {
+    pipeline.unshift({ $match: { deletedAt: null } });
+  }
+});
 
 export const Team: Model<ITeam> =
   mongoose.models.Team || mongoose.model<ITeam>("Team", teamSchema);

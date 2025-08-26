@@ -52,13 +52,14 @@ export function AiAsk() {
     setIsLoading(true);
 
     try {
-      // Mock AI response - replace with actual AI integration
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // TODO: Replace with actual AI integration when available
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content: generateMockResponse(userMessage.content),
+        content:
+          "AI assistant is not yet implemented. This feature will be available once the AI integration is complete.",
         timestamp: new Date(),
       };
 
@@ -75,32 +76,6 @@ export function AiAsk() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const generateMockResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-
-    if (
-      input.includes("issue") ||
-      input.includes("bug") ||
-      input.includes("task")
-    ) {
-      return "I can help you with issues! Here are some things I can do:\n\n• Find issues by status, assignee, or priority\n• Show overdue or upcoming issues\n• Create new issues with smart defaults\n• Analyze issue patterns and bottlenecks\n\nWhat specific aspect of issue management would you like help with?";
-    }
-
-    if (input.includes("sprint") || input.includes("velocity")) {
-      return "For sprint management, I can:\n\n• Show current sprint progress and burndown\n• Calculate team velocity trends\n• Identify sprint scope changes\n• Suggest sprint planning improvements\n\nWould you like me to pull up your current sprint metrics?";
-    }
-
-    if (input.includes("report") || input.includes("analytics")) {
-      return "I can generate various reports for you:\n\n• Sprint retrospective summaries\n• Team performance analytics\n• Issue trend analysis\n• Time tracking reports\n\nWhat type of report would be most helpful right now?";
-    }
-
-    if (input.includes("team") || input.includes("member")) {
-      return "For team management, I can:\n\n• Show team workload distribution\n• Identify blockers affecting team members\n• Suggest optimal task assignments\n• Track team collaboration patterns\n\nWhat would you like to know about your team?";
-    }
-
-    return "That's an interesting question! I can help you with:\n\n• Finding and managing issues\n• Sprint planning and tracking\n• Team analytics and reports\n• Project insights and recommendations\n\nCould you be more specific about what you'd like assistance with?";
   };
 
   const quickActions = [

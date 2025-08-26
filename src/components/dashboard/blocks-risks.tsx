@@ -36,62 +36,25 @@ export function BlocksAndRisks() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data - replace with actual API call
-    const mockRisks: BlockerRisk[] = [
-      {
-        id: "1",
-        type: "stale_wip",
-        severity: "high",
-        issueKey: "PROJ-120",
-        issueTitle: "Database migration script",
-        description: "No updates for 5 days while in progress",
-        daysAffected: 5,
-        project: { key: "PROJ", name: "Motion Task" },
-        assignee: { name: "John Doe" },
-        suggestedAction: "Check with assignee for status update",
-      },
-      {
-        id: "2",
-        type: "reopened",
-        severity: "medium",
-        issueKey: "WEB-43",
-        issueTitle: "Mobile navigation fixes",
-        description: "Reopened after being marked done",
-        daysAffected: 2,
-        project: { key: "WEB", name: "Website" },
-        assignee: { name: "Alice Johnson" },
-        suggestedAction: "Review QA feedback and testing criteria",
-      },
-      {
-        id: "3",
-        type: "long_cycle",
-        severity: "medium",
-        issueKey: "PROJ-118",
-        issueTitle: "User permission system",
-        description: "In progress for 12 days, typical cycle time is 5 days",
-        daysAffected: 12,
-        project: { key: "PROJ", name: "Motion Task" },
-        assignee: { name: "Bob Smith" },
-        suggestedAction: "Break down into smaller tasks",
-      },
-      {
-        id: "4",
-        type: "blocker",
-        severity: "high",
-        issueKey: "API-25",
-        issueTitle: "Third-party API integration",
-        description: "Blocked by external vendor API limitations",
-        daysAffected: 3,
-        project: { key: "API", name: "Integrations" },
-        assignee: { name: "Carol Davis" },
-        suggestedAction: "Escalate to vendor or find alternative approach",
-      },
-    ];
+    const fetchRisks = async () => {
+      try {
+        setIsLoading(true);
+        // TODO: Replace with actual API call when risk analysis is implemented
+        // const response = await fetch('/api/analytics/risks');
+        // const data = await response.json();
+        // setRisks(data.risks || []);
 
-    setTimeout(() => {
-      setRisks(mockRisks);
-      setIsLoading(false);
-    }, 1000);
+        // For now, show empty state
+        setRisks([]);
+      } catch (error) {
+        console.error("Failed to fetch risk data:", error);
+        setRisks([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRisks();
   }, []);
 
   const getRiskIcon = (type: string) => {

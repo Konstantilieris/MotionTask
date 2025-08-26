@@ -79,7 +79,29 @@ export class AuthUtils {
       return null;
     }
 
+    // Update last login timestamp (don't fail authentication if this fails)
+    try {
+      await this.updateLastLogin(String(user._id));
+    } catch (error) {
+      console.error("Failed to update last login timestamp:", error);
+      // Continue with authentication even if last login update fails
+    }
+
     return user;
+  }
+
+  static async updateLastLogin(userId: string): Promise<void> {
+    try {
+      await connectDB();
+      await User.findByIdAndUpdate(
+        userId,
+        { lastLogin: new Date() },
+        { new: true }
+      );
+    } catch (error) {
+      console.error("Error updating last login for user:", userId, error);
+      throw error; // Re-throw so calling code can handle appropriately
+    }
   }
 
   static async getUserById(id: string): Promise<IUser | null> {

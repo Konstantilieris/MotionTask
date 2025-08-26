@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDb } from "@/lib/db";
-import { Activity } from "@/lib/models/Activity";
+import Activity from "@/models/Activity";
 import Issue from "@/models/Issue";
 
 // GET /api/issues/[key]/activities - Get all activities for an issue
@@ -57,13 +57,21 @@ export async function POST(
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });
     }
 
-    // For now, use a mock user ID - in a real app, get from auth token
-    const mockUserId = "507f1f77bcf86cd799439011"; // Replace with actual user from auth
+    // TODO: Get actual user ID from authentication token/session
+    // For now, this will fail until proper auth is implemented
+    const userId = null; // Replace with actual user ID from auth
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User authentication required" },
+        { status: 401 }
+      );
+    }
 
     const activity = await Activity.create({
       issue: issue._id,
       type: body.type,
-      user: mockUserId,
+      user: userId,
       metadata: body.meta || {},
     });
 

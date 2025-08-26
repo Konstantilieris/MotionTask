@@ -191,7 +191,14 @@ export async function getProjectForSettings(projectKey: string): Promise<{
     key: projectKey,
     deletedAt: null,
   })
-    .populate("team", "name slug members")
+    .populate({
+      path: "team",
+      select: "name slug members",
+      populate: {
+        path: "members",
+        select: "name email role createdAt",
+      },
+    })
     .populate("lead", "name email")
     .populate("createdBy", "name email")
     .lean()) as PopulatedProject | null;

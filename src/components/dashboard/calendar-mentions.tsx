@@ -6,6 +6,15 @@ import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
+interface Mention {
+  id: string;
+  type: "comment" | "approval";
+  issueKey: string;
+  message: string;
+  author: string;
+  time: string;
+}
+
 export function DueSoonOverdue() {
   const { myIssues, isLoading } = useDashboardData();
 
@@ -187,26 +196,8 @@ export function MentionsAndReviews() {
   const reviewIssues = myIssues.filter(
     (issue) => issue.status === "In Review" || issue.status === "Review"
   );
-
-  // Mock mentions data since we don't have a mentions API yet
-  const mockMentions = [
-    {
-      id: "1",
-      type: "comment",
-      issueKey: reviewIssues[0]?.key || "PROJ-123",
-      message: "Can you review the latest changes?",
-      author: "Alice Johnson",
-      time: "2h ago",
-    },
-    {
-      id: "2",
-      type: "approval",
-      issueKey: reviewIssues[1]?.key || "PROJ-124",
-      message: "Pull request approved",
-      author: "Bob Smith",
-      time: "4h ago",
-    },
-  ];
+  // TODO: Replace with actual mentions API when implemented
+  const mentions: Mention[] = [];
 
   return (
     <Card className="bg-neutral-900 border border-neutral-700">
@@ -214,7 +205,7 @@ export function MentionsAndReviews() {
         <h3 className="text-lg font-semibold">Mentions & Reviews</h3>
         <div className="flex items-center gap-2">
           <Chip size="sm" color="primary" variant="flat">
-            {reviewIssues.length + mockMentions.length} items
+            {reviewIssues.length + mentions.length} items
           </Chip>
           <Button
             isIconOnly
@@ -257,8 +248,8 @@ export function MentionsAndReviews() {
           </div>
         ))}
 
-        {/* Mock Mentions */}
-        {mockMentions.map((mention) => (
+        {/* Mentions (currently empty - TODO: implement mentions API) */}
+        {mentions.map((mention) => (
           <div
             key={mention.id}
             className="flex items-start gap-3 p-3 rounded-lg bg-neutral-800/30 hover:bg-neutral-800/50 transition-colors"
@@ -295,7 +286,7 @@ export function MentionsAndReviews() {
           </div>
         ))}
 
-        {reviewIssues.length === 0 && mockMentions.length === 0 && (
+        {reviewIssues.length === 0 && mentions.length === 0 && (
           <div className="text-center py-6 text-neutral-400">
             <Icon icon="solar:inbox-bold" className="w-10 h-10 mx-auto mb-2" />
             <p>No mentions or reviews</p>

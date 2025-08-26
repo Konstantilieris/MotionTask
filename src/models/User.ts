@@ -1,11 +1,5 @@
 import mongoose, { Schema, Types, Model, Document } from "mongoose";
-export const ROLE = {
-  ADMIN: "admin",
-  MEMBER: "member",
-  VIEWER: "viewer",
-} as const;
-
-export type Role = (typeof ROLE)[keyof typeof ROLE];
+import { ROLE, type Role } from "@/types/roles";
 
 export interface IUser extends Document {
   email: string;

@@ -5,8 +5,8 @@ import { AuthUtils } from "@/lib/auth-utils";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 
-// GET /api/users - Get all users (admin only)
-export async function GET() {
+// GET /api/users?query= for member picker
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -19,11 +19,25 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const query = searchParams.get("query") || "";
+
     await connectDB();
-    const users = await User.find({ deletedAt: null })
+
+    // Build filter for search
+    const filter: Record<string, unknown> = { deletedAt: null };
+    if (query) {
+      filter.$or = [
+        { name: { $regex: query, $options: "i" } },
+        { email: { $regex: query, $options: "i" } },
+      ];
+    }
+
+    const users = await User.find(filter)
       .populate("team", "name")
       .select("-passwordHash")
-      .sort({ createdAt: -1 });
+      .sort({ name: 1 })
+      .limit(50); // Limit for performance
 
     return NextResponse.json({ users });
   } catch (error) {

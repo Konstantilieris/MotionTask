@@ -13,7 +13,7 @@ export default async function ProjectSettingsPage({
 }: ProjectSettingsPageProps) {
   try {
     let { key } = await params;
-    
+
     // Decode URL-encoded characters (e.g., %CE%A6 -> Φ)
     try {
       const decodedKey = decodeURIComponent(key);
@@ -23,7 +23,7 @@ export default async function ProjectSettingsPage({
     } catch (error) {
       console.warn("Failed to decode project key:", key, error);
     }
-    
+
     console.log("Fetching project settings for key:", key);
     if (!key) {
       console.error("No project key found");
@@ -34,14 +34,18 @@ export default async function ProjectSettingsPage({
     return <ProjectSettingsClient project={project} userRole={userRole} />;
   } catch (error) {
     let { key } = await params;
-    
+
     // Decode the key for error handling as well
     try {
       key = decodeURIComponent(key);
     } catch (decodeError) {
-      console.warn("Failed to decode project key in error handler:", key, decodeError);
+      console.warn(
+        "Failed to decode project key in error handler:",
+        key,
+        decodeError
+      );
     }
-    
+
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
 

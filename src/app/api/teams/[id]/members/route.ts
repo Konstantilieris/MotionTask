@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { AuthUtils } from "@/lib/auth-utils";
-import { TeamUtils } from "@/lib/team-utils";
+import connectDB from "@/lib/mongodb";
+import Team from "@/models/Team";
+import User from "@/models/User";
 
 interface RouteParams {
   params: Promise<{
@@ -10,7 +12,7 @@ interface RouteParams {
   }>;
 }
 
-// POST /api/teams/[id]/members - Add member to team (admin only)
+// POST /api/teams/:id/members → { add?: string[], remove?: string[] }
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,7 +20,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin
     const currentUser = await AuthUtils.getUserById(session.user.id);
     if (!currentUser || currentUser.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -26,70 +27,64 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const resolvedParams = await params;
     const { id: teamId } = resolvedParams;
-    const { userId } = await request.json();
+    const body = await request.json();
+    const { add, remove } = body;
 
-    if (!userId) {
+    if (!add && !remove) {
       return NextResponse.json(
-        { error: "User ID is required" },
+        { error: "Either 'add' or 'remove' array must be provided" },
         { status: 400 }
       );
     }
 
-    // Check if user exists
-    const user = await AuthUtils.getUserById(userId);
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    await connectDB();
+
+    // Find the team
+    const team = await Team.findById(teamId);
+    if (!team) {
+      return NextResponse.json({ error: "Team not found" }, { status: 404 });
     }
 
-    await TeamUtils.addMemberToTeam(teamId, userId);
+    // Validate user IDs if provided
+    if (add && Array.isArray(add) && add.length > 0) {
+      // Dedupe the add array
+      const uniqueAdd = [...new Set(add)];
+      const users = await User.find({ _id: { $in: uniqueAdd } });
+      if (users.length !== uniqueAdd.length) {
+        return NextResponse.json(
+          { error: "Some user IDs in 'add' array are invalid" },
+          { status: 400 }
+        );
+      }
 
-    return NextResponse.json({
-      message: "Member added to team successfully",
-    });
-  } catch (error) {
-    console.error("Error adding member to team:", error);
-    if (error instanceof Error && error.message.includes("already")) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
+      // Add members using $addToSet to avoid duplicates
+      await Team.findByIdAndUpdate(teamId, {
+        $addToSet: { members: { $each: uniqueAdd } },
+      });
     }
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+
+    if (remove && Array.isArray(remove) && remove.length > 0) {
+      // Dedupe the remove array
+      const uniqueRemove = [...new Set(remove)];
+
+      // Remove members using $pull
+      await Team.findByIdAndUpdate(teamId, {
+        $pull: { members: { $in: uniqueRemove } },
+      });
+    }
+
+    // Get updated team with populated members
+    const updatedTeam = await Team.findById(teamId).populate(
+      "members",
+      "name email role"
     );
-  }
-}
-
-// DELETE /api/teams/[id]/members - Remove member from team (admin only)
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check if user is admin
-    const currentUser = await AuthUtils.getUserById(session.user.id);
-    if (!currentUser || currentUser.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const resolvedParams = await params;
-    const { id: teamId } = resolvedParams;
-    const { userId } = await request.json();
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "User ID is required" },
-        { status: 400 }
-      );
-    }
-
-    await TeamUtils.removeMemberFromTeam(teamId, userId);
 
     return NextResponse.json({
-      message: "Member removed from team successfully",
+      message: "Team members updated successfully",
+      team: updatedTeam,
     });
   } catch (error) {
-    console.error("Error removing member from team:", error);
+    console.error("Error updating team members:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

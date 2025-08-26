@@ -70,59 +70,25 @@ export function TeamSnapshot() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data - replace with actual API call
-    const mockTeamData: TeamSnapshot = {
-      currentSprint: {
-        name: "Sprint 2024-08",
-        progress: 65,
-        scopeChanges: 2,
-        blockers: [
-          {
-            id: "1",
-            title: "API rate limit blocking user sync",
-            severity: "high",
-          },
-          {
-            id: "2",
-            title: "Database migration pending approval",
-            severity: "medium",
-          },
-        ],
-      },
-      velocity: [38, 42, 35, 48, 41],
-      metrics: {
-        leadTime: 4.2,
-        cycleTime: 2.8,
-      },
-      announcements: [
-        {
-          id: "1",
-          type: "release",
-          title: "v2.1.0 released with new dashboard features",
-          timestamp: "2 hours ago",
-          isImportant: true,
-        },
-        {
-          id: "2",
-          type: "meeting",
-          title: "Sprint retrospective tomorrow 2PM",
-          timestamp: "5 hours ago",
-          isImportant: false,
-        },
-        {
-          id: "3",
-          type: "outage",
-          title: "Database maintenance window scheduled",
-          timestamp: "1 day ago",
-          isImportant: true,
-        },
-      ],
+    const fetchTeamData = async () => {
+      try {
+        setIsLoading(true);
+        // TODO: Replace with actual API calls when team analytics endpoints are available
+        // const response = await fetch('/api/team/snapshot');
+        // const data = await response.json();
+        // setTeamData(data);
+
+        // For now, show empty state
+        setTeamData(null);
+      } catch (error) {
+        console.error("Failed to fetch team data:", error);
+        setTeamData(null);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    setTimeout(() => {
-      setTeamData(mockTeamData);
-      setIsLoading(false);
-    }, 800);
+    fetchTeamData();
   }, []);
 
   if (isLoading) {
@@ -142,7 +108,26 @@ export function TeamSnapshot() {
     );
   }
 
-  if (!teamData) return null;
+  if (!teamData) {
+    return (
+      <Card className="bg-neutral-900 border border-neutral-700">
+        <CardHeader>
+          <h3 className="text-lg font-semibold">Team Snapshot</h3>
+        </CardHeader>
+        <CardBody className="text-center py-8">
+          <Icon
+            icon="solar:users-group-two-rounded-bold"
+            className="w-12 h-12 text-neutral-600 mx-auto mb-4"
+          />
+          <p className="text-neutral-400 mb-2">Team analytics not available</p>
+          <p className="text-sm text-neutral-500">
+            Team snapshot data will be available when analytics endpoints are
+            implemented
+          </p>
+        </CardBody>
+      </Card>
+    );
+  }
 
   const averageVelocity =
     teamData.velocity.reduce((a, b) => a + b, 0) / teamData.velocity.length;
@@ -310,52 +295,25 @@ export function WatchingIssues() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data - replace with actual API call
-    const mockWatchedIssues: WatchedIssue[] = [
-      {
-        id: "1",
-        key: "PROJ-125",
-        title: "Add user profile settings",
-        status: "In Progress",
-        priority: "high",
-        project: { key: "PROJ", name: "Motion Task" },
-        recentChanges: [
-          {
-            type: "comment",
-            timestamp: "2 hours ago",
-            user: "Alice Johnson",
-            description: "Added mockups for the settings page",
-          },
-          {
-            type: "status",
-            timestamp: "1 day ago",
-            user: "Bob Smith",
-            description: "Moved from To Do to In Progress",
-          },
-        ],
-      },
-      {
-        id: "2",
-        key: "WEB-46",
-        title: "Optimize image loading performance",
-        status: "In Review",
-        priority: "medium",
-        project: { key: "WEB", name: "Website" },
-        recentChanges: [
-          {
-            type: "update",
-            timestamp: "4 hours ago",
-            user: "Carol Davis",
-            description: "Updated implementation approach",
-          },
-        ],
-      },
-    ];
+    const fetchWatchedIssues = async () => {
+      try {
+        setIsLoading(true);
+        // TODO: Replace with actual API call when watch functionality is implemented
+        // const response = await fetch('/api/issues/watched');
+        // const data = await response.json();
+        // setWatchedIssues(data.issues || []);
 
-    setTimeout(() => {
-      setWatchedIssues(mockWatchedIssues);
-      setIsLoading(false);
-    }, 900);
+        // For now, show empty state
+        setWatchedIssues([]);
+      } catch (error) {
+        console.error("Failed to fetch watched issues:", error);
+        setWatchedIssues([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchWatchedIssues();
   }, []);
 
   if (isLoading) {
@@ -457,41 +415,25 @@ export function RecentlyViewed() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data - replace with actual API call
-    const mockRecentItems: RecentlyViewed[] = [
-      {
-        id: "1",
-        type: "issue",
-        key: "PROJ-123",
-        title: "Implement user authentication system",
-        url: "/issues/PROJ-123",
-        timestamp: "5 minutes ago",
-        isPinned: true,
-      },
-      {
-        id: "2",
-        type: "project",
-        key: "PROJ",
-        title: "Motion Task Management",
-        url: "/projects/PROJ",
-        timestamp: "1 hour ago",
-        isPinned: false,
-      },
-      {
-        id: "3",
-        type: "sprint",
-        key: "Sprint 2024-08",
-        title: "Sprint 2024-08",
-        url: "/sprints/sprint-1",
-        timestamp: "2 hours ago",
-        isPinned: false,
-      },
-    ];
+    const fetchRecentItems = async () => {
+      try {
+        setIsLoading(true);
+        // TODO: Replace with actual API call when user activity tracking is implemented
+        // const response = await fetch('/api/user/recent');
+        // const data = await response.json();
+        // setRecentItems(data.items || []);
 
-    setTimeout(() => {
-      setRecentItems(mockRecentItems);
-      setIsLoading(false);
-    }, 500);
+        // For now, show empty state
+        setRecentItems([]);
+      } catch (error) {
+        console.error("Failed to fetch recent items:", error);
+        setRecentItems([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRecentItems();
   }, []);
 
   const togglePin = (id: string) => {

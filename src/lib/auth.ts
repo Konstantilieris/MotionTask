@@ -70,6 +70,15 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       // Initial sign-in
       if (user) {
+        // Update last login timestamp for any authentication method
+        try {
+          if ((user as any).id) {
+            await AuthUtils.updateLastLogin((user as any).id);
+          }
+        } catch (error) {
+          console.error("Failed to update last login in JWT callback:", error);
+        }
+
         token.user = {
           id: (user as any).id,
           email: (user as any).email ?? null,

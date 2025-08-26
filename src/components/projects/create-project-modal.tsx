@@ -114,14 +114,15 @@ export default function CreateProjectModal() {
       isOpen={isModalOpen}
       onClose={handleClose}
       className="dark font-sans"
-      size="full"
+      size="lg"
       backdrop="blur"
+      placement="center"
       classNames={{
-        base: "mx-2 my-2 sm:mx-4 sm:my-4 max-w-4xl",
-        wrapper: "items-start sm:items-center justify-center",
-        body: "p-4 sm:p-6 max-h-[70vh] sm:max-h-[80vh]",
-        header: "p-4 sm:p-6 pb-2 sm:pb-3",
-        footer: "p-4 sm:p-6 pt-2 sm:pt-3",
+        base: "mx-2 my-2 sm:mx-4 sm:my-4 max-h-[90vh]",
+        wrapper: "items-center justify-center",
+        body: "p-4 sm:p-6",
+        header: "p-4 sm:p-6 pb-2",
+        footer: "p-4 sm:p-6 pt-2",
       }}
     >
       <ModalContent>

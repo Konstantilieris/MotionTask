@@ -1,10 +1,10 @@
-import { Activity } from "@/lib/models/Activity";
+import Activity from "@/models/Activity";
 import { connectToDb } from "@/lib/db";
 import { ClientSession } from "mongoose";
 
 export interface CreateActivityData {
   issueId: string;
-  type: "comment" | "updated" | "status_changed" | "assigned" | "created";
+  type: "comment" | "updated" | "status-changed" | "assigned" | "created";
   actor: string; // User ID
   meta?: {
     field?: string;
@@ -25,10 +25,11 @@ export async function createActivity(
     }
 
     const activityData = {
+      type: data.type,
       issue: data.issueId,
       user: data.actor,
-      type: data.type,
-      metadata: data.meta || {},
+      meta: data.meta || {},
+      at: new Date(),
     };
 
     if (session) {
@@ -68,7 +69,7 @@ export async function createStatusChangeActivity(
   return createActivity(
     {
       issueId,
-      type: "status_changed",
+      type: "status-changed",
       actor: actorId,
       meta: {
         field: "status",

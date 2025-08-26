@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardBody,
-  CardHeader,
   Button,
   Modal,
   ModalContent,
@@ -13,7 +12,6 @@ import {
   ModalFooter,
   Input,
   Textarea,
-  useDisclosure,
   Table,
   TableHeader,
   TableColumn,
@@ -25,13 +23,22 @@ import {
   DropdownMenu,
   DropdownItem,
   Avatar,
-  Divider,
   Select,
   SelectItem,
+  Chip,
+  Spinner,
 } from "@heroui/react";
-import { Icon } from "@iconify/react";
-import { motion } from "framer-motion";
+import {
+  Search,
+  Plus,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Users,
+  RotateCcw,
+} from "lucide-react";
 import { toast } from "sonner";
+import { ROLE } from "@/types/roles";
 
 interface TeamMember {
   _id: string;
@@ -45,534 +52,774 @@ interface Team {
   name: string;
   slug: string;
   description?: string;
-  members: TeamMember[];
+  avatar?: string;
   defaultRole: string;
+  members: TeamMember[];
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
-  team?: string;
-}
-
-export default function TeamsManagementPage() {
+const TeamsManagementPage: React.FC = () => {
+  // Core state
   const [teams, setTeams] = useState<Team[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [deletedFilter, setDeletedFilter] = useState("false");
+  const [currentPage] = useState(1);
 
-  // Create team modal
-  const {
-    isOpen: isCreateOpen,
-    onOpen: onCreateOpen,
-    onClose: onCreateClose,
-  } = useDisclosure();
-  const [newTeamName, setNewTeamName] = useState("");
-  const [newTeamDescription, setNewTeamDescription] = useState("");
+  // Modal states
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Edit team modal
-  const {
-    isOpen: isEditOpen,
-    onOpen: onEditOpen,
-    onClose: onEditClose,
-  } = useDisclosure();
-  const [editTeamName, setEditTeamName] = useState("");
-  const [editTeamDescription, setEditTeamDescription] = useState("");
+  // Form states
+  const [formData, setFormData] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    avatar: "",
+    defaultRole: ROLE.MEMBER as string,
+    members: [] as string[],
+  });
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Add member modal
-  const {
-    isOpen: isAddMemberOpen,
-    onOpen: onAddMemberOpen,
-    onClose: onAddMemberClose,
-  } = useDisclosure();
-  const [selectedUserId, setSelectedUserId] = useState("");
-
-  // Fetch teams and users
-  const fetchData = async () => {
-    try {
-      const [teamsResponse, usersResponse] = await Promise.all([
-        fetch("/api/teams"),
-        fetch("/api/users"),
-      ]);
-
-      if (!teamsResponse.ok || !usersResponse.ok) {
-        throw new Error("Failed to fetch data");
-      }
-
-      const teamsData = await teamsResponse.json();
-      const usersData = await usersResponse.json();
-
-      setTeams(teamsData.teams);
-      setUsers(usersData.users);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast.error("Failed to load data");
-    } finally {
-      setIsLoading(false);
-    }
+  // Generate slug from name
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
   };
 
-  useEffect(() => {
-    fetchData();
+  // Fetch teams
+  const fetchTeams = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        query: searchQuery,
+        page: currentPage.toString(),
+        limit: "10",
+        deleted: deletedFilter,
+      });
+
+      const response = await fetch(`/api/teams?${params}`);
+      if (!response.ok) throw new Error("Failed to fetch teams");
+
+      const data = await response.json();
+      setTeams(data.teams || []);
+    } catch (error) {
+      console.error("Error fetching teams:", error);
+      toast.error("Failed to load teams");
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery, currentPage, deletedFilter]);
+
+  // Fetch users
+  const fetchUsers = useCallback(async () => {
+    // Users fetching would be implemented for member management features
   }, []);
 
-  // Create new team
+  // Initialize
+  useEffect(() => {
+    fetchTeams();
+    fetchUsers();
+  }, [fetchTeams, fetchUsers]);
+
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      slug: "",
+      description: "",
+      avatar: "",
+      defaultRole: ROLE.MEMBER as string,
+      members: [],
+    });
+    setIsDirty(false);
+  };
+
+  // Handle form changes
+  const handleFormChange = (field: string, value: string | string[]) => {
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
+      if (field === "name") {
+        newData.slug = generateSlug(value as string);
+      }
+      return newData;
+    });
+    setIsDirty(true);
+  };
+
+  // Validate form
+  const validateForm = (): string | null => {
+    if (
+      !formData.name.trim() ||
+      formData.name.trim().length < 2 ||
+      formData.name.trim().length > 60
+    ) {
+      return "Name must be between 2 and 60 characters";
+    }
+    if (!formData.slug.trim() || !/^[a-z0-9-]{2,64}$/.test(formData.slug)) {
+      return "Slug must be 2-64 characters with only lowercase letters, numbers, and hyphens";
+    }
+    if (formData.avatar && !formData.avatar.startsWith("https://")) {
+      return "Avatar must be a valid HTTPS URL";
+    }
+    return null;
+  };
+
+  // Create team
   const handleCreateTeam = async () => {
-    if (!newTeamName.trim()) {
-      toast.error("Team name is required");
+    const error = validateForm();
+    if (error) {
+      toast.error(error);
       return;
     }
 
-    setIsCreating(true);
     try {
+      setIsSubmitting(true);
       const response = await fetch("/api/teams", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newTeamName,
-          description: newTeamDescription,
-        }),
+        body: JSON.stringify(formData),
       });
 
-      if (!response.ok) throw new Error("Failed to create team");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create team");
+      }
 
-      toast.success("Team created successfully!");
-      setNewTeamName("");
-      setNewTeamDescription("");
-      onCreateClose();
-      fetchData();
+      const data = await response.json();
+      toast.success(data.message || "Team created successfully");
+      setShowCreateModal(false);
+      resetForm();
+      fetchTeams();
     } catch (error) {
-      console.error("Error creating team:", error);
-      toast.error("Failed to create team");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create team"
+      );
     } finally {
-      setIsCreating(false);
+      setIsSubmitting(false);
     }
   };
 
   // Update team
   const handleUpdateTeam = async () => {
-    if (!selectedTeam || !editTeamName.trim()) {
-      toast.error("Team name is required");
+    if (!selectedTeam) return;
+
+    const error = validateForm();
+    if (error) {
+      toast.error(error);
       return;
     }
 
-    setIsUpdating(true);
     try {
+      setIsSubmitting(true);
       const response = await fetch(`/api/teams/${selectedTeam._id}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editTeamName,
-          description: editTeamDescription,
-        }),
+        body: JSON.stringify(formData),
       });
 
-      if (!response.ok) throw new Error("Failed to update team");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update team");
+      }
 
-      toast.success("Team updated successfully!");
-      onEditClose();
-      fetchData();
+      const data = await response.json();
+      toast.success(data.message || "Team updated successfully");
+      setShowEditModal(false);
+      resetForm();
+      fetchTeams();
     } catch (error) {
-      console.error("Error updating team:", error);
-      toast.error("Failed to update team");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update team"
+      );
     } finally {
-      setIsUpdating(false);
+      setIsSubmitting(false);
     }
   };
 
-  // Delete team
-  const handleDeleteTeam = async (teamId: string) => {
-    if (!confirm("Are you sure you want to delete this team?")) return;
+  // Delete/Restore team
+  const handleDeleteTeam = async () => {
+    if (!selectedTeam) return;
 
     try {
-      const response = await fetch(`/api/teams/${teamId}`, {
-        method: "DELETE",
-      });
+      setIsSubmitting(true);
+      let response;
 
-      if (!response.ok) throw new Error("Failed to delete team");
+      if (selectedTeam.deletedAt) {
+        response = await fetch(`/api/teams/${selectedTeam._id}/restore`, {
+          method: "POST",
+        });
+      } else {
+        response = await fetch(`/api/teams/${selectedTeam._id}`, {
+          method: "DELETE",
+        });
+      }
 
-      toast.success("Team deleted successfully!");
-      fetchData();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to process request");
+      }
+
+      const data = await response.json();
+      toast.success(data.message);
+      setShowDeleteModal(false);
+      fetchTeams();
     } catch (error) {
-      console.error("Error deleting team:", error);
-      toast.error("Failed to delete team");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to process request"
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Add member to team
-  const handleAddMember = async () => {
-    if (!selectedTeam || !selectedUserId) {
-      toast.error("Please select a user");
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/teams/${selectedTeam._id}/members`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: selectedUserId }),
-      });
-
-      if (!response.ok) throw new Error("Failed to add member");
-
-      toast.success("Member added successfully!");
-      setSelectedUserId("");
-      onAddMemberClose();
-      fetchData();
-    } catch (error) {
-      console.error("Error adding member:", error);
-      toast.error("Failed to add member");
-    }
-  };
-
-  // Remove member from team
-  const handleRemoveMember = async (teamId: string, userId: string) => {
-    if (!confirm("Are you sure you want to remove this member?")) return;
-
-    try {
-      const response = await fetch(`/api/teams/${teamId}/members`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-
-      if (!response.ok) throw new Error("Failed to remove member");
-
-      toast.success("Member removed successfully!");
-      fetchData();
-    } catch (error) {
-      console.error("Error removing member:", error);
-      toast.error("Failed to remove member");
-    }
+  // Modal handlers
+  const openCreateModal = () => {
+    resetForm();
+    setShowCreateModal(true);
   };
 
   const openEditModal = (team: Team) => {
     setSelectedTeam(team);
-    setEditTeamName(team.name);
-    setEditTeamDescription(team.description || "");
-    onEditOpen();
+    setFormData({
+      name: team.name,
+      slug: team.slug,
+      description: team.description || "",
+      avatar: team.avatar || "",
+      defaultRole: team.defaultRole,
+      members: team.members.map((m) => m._id),
+    });
+    setIsDirty(false);
+    setShowEditModal(true);
   };
 
-  const openAddMemberModal = (team: Team) => {
+  const openDeleteModal = (team: Team) => {
     setSelectedTeam(team);
-    setSelectedUserId("");
-    onAddMemberOpen();
+    setShowDeleteModal(true);
   };
 
-  // Get available users (not in the selected team)
-  const getAvailableUsers = () => {
-    if (!selectedTeam) return [];
-    const teamMemberIds = selectedTeam.members.map((m) => m._id);
-    return users.filter((user) => !teamMemberIds.includes(user._id));
+  // Handle modal close with dirty check
+  const handleModalClose = (modalSetter: (value: boolean) => void) => {
+    if (isDirty && !window.confirm("You have unsaved changes. Close anyway?")) {
+      return;
+    }
+    modalSetter(false);
+    resetForm();
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-black to-neutral-900 font-sans">
-        <div className="max-w-7xl mx-auto p-8">
-          <div className="flex items-center justify-center h-64">
-            <Icon
-              icon="solar:loading-linear"
-              className="animate-spin h-8 w-8 text-white"
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <>
-      <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-black to-neutral-900 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-black to-neutral-900 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <motion.div
-          className="bg-black/30 backdrop-blur-lg border-b border-white/5 px-8 py-6"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl font-light text-white tracking-tight">
-              Teams Management
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              Manage teams and members across your organization
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Teams Management</h1>
+            <p className="text-gray-400 mt-1">
+              Manage your organization&apos;s teams and members
             </p>
           </div>
-        </motion.div>
-
-        <div className="max-w-7xl mx-auto p-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+          <Button
+            color="primary"
+            variant="solid"
+            startContent={<Plus className="h-4 w-4" />}
+            onPress={openCreateModal}
+            className="bg-blue-600 hover:bg-blue-700"
           >
-            <Card className="bg-black/20 backdrop-blur-xl border border-white/10 shadow-2xl">
-              <CardHeader className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-light text-white tracking-wide">
-                    All Teams
-                  </h2>
-                  <p className="text-gray-400 text-sm">
-                    {teams.length} team{teams.length !== 1 ? "s" : ""} total
-                  </p>
-                </div>
-                <Button
-                  color="success"
-                  variant="ghost"
-                  startContent={
-                    <Icon icon="solar:add-circle-line-duotone" width={20} />
-                  }
-                  onPress={onCreateOpen}
-                  className="border-green-400/30 hover:border-green-400/60"
-                >
-                  Create Team
-                </Button>
-              </CardHeader>
-              <Divider className="bg-white/5" />
-              <CardBody>
-                <Table aria-label="Teams table">
-                  <TableHeader>
-                    <TableColumn>TEAM</TableColumn>
-                    <TableColumn>MEMBERS</TableColumn>
-                    <TableColumn>CREATED</TableColumn>
-                    <TableColumn>ACTIONS</TableColumn>
-                  </TableHeader>
-                  <TableBody>
-                    {teams.map((team) => (
-                      <TableRow key={team._id}>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <Avatar
-                              size="sm"
-                              name={team.name}
-                              className="bg-gradient-to-br from-blue-400 to-purple-600"
-                            />
-                            <div>
-                              <p className="font-medium text-white">
-                                {team.name}
-                              </p>
-                              <p className="text-gray-400 text-sm">
+            New Team
+          </Button>
+        </div>
+
+        {/* Filters */}
+        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+          <CardBody>
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search teams..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  startContent={<Search className="h-4 w-4 text-gray-400" />}
+                  variant="bordered"
+                  classNames={{
+                    input: "text-white placeholder-gray-400",
+                    inputWrapper:
+                      "border-white/20 bg-white/5 hover:border-white/30 focus-within:border-blue-500",
+                  }}
+                />
+              </div>
+              <Select
+                placeholder="Filter by status"
+                selectedKeys={new Set([deletedFilter])}
+                onSelectionChange={(keys) =>
+                  setDeletedFilter(Array.from(keys)[0] as string)
+                }
+                className="min-w-[200px]"
+                variant="bordered"
+                classNames={{
+                  trigger:
+                    "border-white/20 bg-white/5 hover:border-white/30 data-[open]:border-blue-500",
+                  value: "text-light-100",
+
+                  listbox: "bg-gray-800",
+                  popoverContent: "bg-gray-800 border-white/20",
+                }}
+              >
+                <SelectItem key="false">Active Teams</SelectItem>
+                <SelectItem key="true">Deleted Teams</SelectItem>
+                <SelectItem key="all">All Teams</SelectItem>
+              </Select>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Teams Table */}
+        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+          <CardBody className="p-0">
+            {loading ? (
+              <div className="flex justify-center p-8">
+                <Spinner color="primary" />
+              </div>
+            ) : (
+              <Table
+                aria-label="Teams table"
+                className="min-h-[400px]"
+                classNames={{
+                  wrapper: "bg-transparent shadow-none",
+                  th: "bg-white/5 text-gray-300 border-b border-white/10",
+                  td: "border-b border-white/5 text-gray-200",
+                }}
+              >
+                <TableHeader>
+                  <TableColumn>NAME</TableColumn>
+                  <TableColumn>SLUG</TableColumn>
+                  <TableColumn>MEMBERS</TableColumn>
+                  <TableColumn>DEFAULT ROLE</TableColumn>
+                  <TableColumn>UPDATED</TableColumn>
+                  <TableColumn>STATUS</TableColumn>
+                  <TableColumn>ACTIONS</TableColumn>
+                </TableHeader>
+                <TableBody emptyContent="No teams found">
+                  {teams.map((team) => (
+                    <TableRow key={team._id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar
+                            src={team.avatar}
+                            name={team.name}
+                            size="sm"
+                            className="text-white bg-blue-600"
+                          />
+                          <div>
+                            <p className="font-medium text-white">
+                              {team.name}
+                            </p>
+                            {team.description && (
+                              <p className="text-xs text-gray-400 truncate max-w-[200px]">
                                 {team.description}
                               </p>
-                            </div>
+                            )}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-white">
-                              {team.members.length}
-                            </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-mono text-gray-300">
+                          {team.slug}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          className="bg-white/10 text-gray-200"
+                        >
+                          {team.members.length}
+                        </Chip>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="sm"
+                          color={
+                            team.defaultRole === ROLE.ADMIN
+                              ? "danger"
+                              : team.defaultRole === ROLE.MEMBER
+                              ? "primary"
+                              : "secondary"
+                          }
+                          variant="flat"
+                        >
+                          {team.defaultRole}
+                        </Chip>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-gray-400">
+                          {new Date(team.updatedAt).toLocaleDateString()}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="sm"
+                          color={team.deletedAt ? "danger" : "success"}
+                          variant="flat"
+                        >
+                          {team.deletedAt ? "Deleted" : "Active"}
+                        </Chip>
+                      </TableCell>
+                      <TableCell>
+                        <Dropdown>
+                          <DropdownTrigger>
                             <Button
+                              isIconOnly
+                              variant="light"
                               size="sm"
-                              variant="ghost"
-                              startContent={
-                                <Icon
-                                  icon="solar:user-plus-linear"
-                                  width={16}
-                                />
-                              }
-                              onPress={() => openAddMemberModal(team)}
-                              className="text-gray-400 hover:text-white"
+                              className="text-gray-400 hover:text-gray-200 hover:bg-white/10"
                             >
-                              Add
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-gray-400">
-                            {new Date(team.createdAt).toLocaleDateString()}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Dropdown>
-                            <DropdownTrigger>
-                              <Button variant="ghost" size="sm" isIconOnly>
-                                <Icon icon="solar:menu-dots-bold" />
-                              </Button>
-                            </DropdownTrigger>
-                            <DropdownMenu>
+                          </DropdownTrigger>
+                          <DropdownMenu
+                            aria-label="Team actions"
+                            className="bg-gray-800 border border-white/20"
+                          >
+                            {!team.deletedAt ? (
                               <DropdownItem
                                 key="edit"
+                                startContent={<Edit className="h-4 w-4" />}
                                 onPress={() => openEditModal(team)}
+                                className="text-gray-200 hover:text-white hover:bg-white/10"
                               >
                                 Edit Team
                               </DropdownItem>
-                              {team.slug !== "default" ? (
-                                <DropdownItem
-                                  key="delete"
-                                  className="text-danger"
-                                  color="danger"
-                                  onPress={() => handleDeleteTeam(team._id)}
-                                >
-                                  Delete Team
-                                </DropdownItem>
-                              ) : null}
-                            </DropdownMenu>
-                          </Dropdown>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardBody>
-            </Card>
-          </motion.div>
-        </div>
+                            ) : null}
+                            <DropdownItem
+                              key="delete"
+                              startContent={
+                                team.deletedAt ? (
+                                  <RotateCcw className="h-4 w-4" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )
+                              }
+                              onPress={() => openDeleteModal(team)}
+                              className={
+                                team.deletedAt
+                                  ? "text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                                  : "text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                              }
+                            >
+                              {team.deletedAt ? "Restore Team" : "Delete Team"}
+                            </DropdownItem>
+                          </DropdownMenu>
+                        </Dropdown>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* Create Team Modal */}
+        <Modal
+          isOpen={showCreateModal}
+          onClose={() => handleModalClose(setShowCreateModal)}
+          size="2xl"
+          classNames={{
+            backdrop: "bg-black/50 backdrop-blur-sm",
+            base: "bg-gray-900 border border-white/20",
+            header: "border-b border-white/10 bg-gray-900 text-white",
+            body: "bg-gray-900 text-gray-100",
+            footer: "border-t border-white/10 bg-gray-900",
+          }}
+        >
+          <ModalContent>
+            <ModalHeader>
+              <div className="flex items-center gap-2 text-white">
+                <Users className="h-5 w-5" />
+                Create New Team
+              </div>
+            </ModalHeader>
+            <ModalBody className="gap-4">
+              <Input
+                label="Team Name"
+                placeholder="Enter team name"
+                value={formData.name}
+                onChange={(e) => handleFormChange("name", e.target.value)}
+                isRequired
+                variant="bordered"
+                classNames={{
+                  input: "text-white placeholder-gray-400",
+                  inputWrapper:
+                    "border-white/20 bg-white/5 hover:border-white/30 focus-within:border-blue-500",
+                  label: "text-gray-300",
+                }}
+              />
+              <Input
+                label="Slug"
+                placeholder="team-slug"
+                value={formData.slug}
+                onChange={(e) => handleFormChange("slug", e.target.value)}
+                description="URL-friendly identifier (auto-generated from name)"
+                isRequired
+                variant="bordered"
+                classNames={{
+                  input: "text-white placeholder-gray-400 font-mono",
+                  inputWrapper:
+                    "border-white/20 bg-white/5 hover:border-white/30 focus-within:border-blue-500",
+                  label: "text-gray-300",
+                  description: "text-gray-400",
+                }}
+              />
+              <Textarea
+                label="Description"
+                placeholder="Team description (optional)"
+                value={formData.description}
+                onChange={(e) =>
+                  handleFormChange("description", e.target.value)
+                }
+                variant="bordered"
+                classNames={{
+                  input: "text-white placeholder-gray-400",
+                  inputWrapper:
+                    "border-white/20 bg-white/5 hover:border-white/30 focus-within:border-blue-500",
+                  label: "text-gray-300",
+                }}
+              />
+              <Select
+                label="Default Role"
+                placeholder="Select default role for new members"
+                selectedKeys={new Set([formData.defaultRole])}
+                onSelectionChange={(keys) =>
+                  handleFormChange("defaultRole", Array.from(keys)[0] as string)
+                }
+                isRequired
+                variant="bordered"
+                classNames={{
+                  trigger:
+                    "border-white/20 bg-white/5 hover:border-white/30 data-[open]:border-blue-500",
+                  value: "text-white",
+                  label: "text-gray-300",
+                  listbox: "bg-gray-800",
+                  popoverContent: "bg-gray-800 border-white/20",
+                }}
+              >
+                {Object.values(ROLE).map((role) => (
+                  <SelectItem key={role}>
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </SelectItem>
+                ))}
+              </Select>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                variant="light"
+                onPress={() => handleModalClose(setShowCreateModal)}
+                className="text-gray-400 hover:text-gray-200"
+              >
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                onPress={handleCreateTeam}
+                isLoading={isSubmitting}
+                isDisabled={!formData.name.trim() || !formData.slug.trim()}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Create Team
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        {/* Edit Modal */}
+        <Modal
+          isOpen={showEditModal}
+          onClose={() => {
+            if (isDirty && !confirm("You have unsaved changes. Close anyway?"))
+              return;
+            setShowEditModal(false);
+            resetForm();
+          }}
+          size="2xl"
+          classNames={{
+            backdrop: "bg-black/50 backdrop-blur-sm",
+            base: "bg-gray-900 border border-white/20",
+            header: "border-b border-white/10 bg-gray-900 text-white",
+            body: "bg-gray-900 text-gray-100",
+            footer: "border-t border-white/10 bg-gray-900",
+          }}
+        >
+          <ModalContent>
+            <ModalHeader>
+              <div className="flex items-center gap-2 text-white">
+                <Edit className="h-5 w-5" />
+                Edit Team
+              </div>
+            </ModalHeader>
+            <ModalBody className="gap-4">
+              <Input
+                label="Team Name"
+                placeholder="Enter team name"
+                value={formData.name}
+                onChange={(e) => handleFormChange("name", e.target.value)}
+                isRequired
+                variant="bordered"
+                classNames={{
+                  input: "text-white placeholder-gray-400",
+                  inputWrapper:
+                    "border-white/20 bg-white/5 hover:border-white/30 focus-within:border-blue-500",
+                  label: "text-gray-300",
+                }}
+              />
+              <Input
+                label="Slug"
+                placeholder="team-slug"
+                value={formData.slug}
+                onChange={(e) => handleFormChange("slug", e.target.value)}
+                description="URL-friendly identifier"
+                isRequired
+                variant="bordered"
+                classNames={{
+                  input: "text-white placeholder-gray-400 font-mono",
+                  inputWrapper:
+                    "border-white/20 bg-white/5 hover:border-white/30 focus-within:border-blue-500",
+                  label: "text-gray-300",
+                  description: "text-gray-400",
+                }}
+              />
+              <Textarea
+                label="Description"
+                placeholder="Team description (optional)"
+                value={formData.description}
+                onChange={(e) =>
+                  handleFormChange("description", e.target.value)
+                }
+                variant="bordered"
+                classNames={{
+                  input: "text-white placeholder-gray-400",
+                  inputWrapper:
+                    "border-white/20 bg-white/5 hover:border-white/30 focus-within:border-blue-500",
+                  label: "text-gray-300",
+                }}
+              />
+              <Select
+                label="Default Role"
+                placeholder="Select default role for new members"
+                selectedKeys={new Set([formData.defaultRole])}
+                onSelectionChange={(keys) =>
+                  handleFormChange("defaultRole", Array.from(keys)[0] as string)
+                }
+                isRequired
+                variant="bordered"
+                classNames={{
+                  trigger:
+                    "border-white/20 bg-white/5 hover:border-white/30 data-[open]:border-blue-500",
+                  value: "text-white",
+                  label: "text-gray-300",
+                  listbox: "bg-gray-800",
+                  popoverContent: "bg-gray-800 border-white/20",
+                }}
+              >
+                {Object.values(ROLE).map((role) => (
+                  <SelectItem key={role}>
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </SelectItem>
+                ))}
+              </Select>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                variant="light"
+                onPress={() => {
+                  if (
+                    isDirty &&
+                    !confirm("You have unsaved changes. Close anyway?")
+                  )
+                    return;
+                  setShowEditModal(false);
+                  resetForm();
+                }}
+                className="text-gray-400 hover:text-gray-200"
+              >
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                onPress={handleUpdateTeam}
+                isLoading={isSubmitting}
+                isDisabled={!formData.name.trim() || !formData.slug.trim()}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Update Team
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          size="md"
+          classNames={{
+            backdrop: "bg-black/50 backdrop-blur-sm",
+            base: "bg-gray-900 border border-white/20",
+            header: "border-b border-white/10 bg-gray-900 text-white",
+            body: "bg-gray-900 text-gray-100",
+            footer: "border-t border-white/10 bg-gray-900",
+          }}
+        >
+          <ModalContent>
+            <ModalHeader>
+              <div className="flex items-center gap-2 text-white">
+                {selectedTeam?.deletedAt ? (
+                  <RotateCcw className="h-5 w-5" />
+                ) : (
+                  <Trash2 className="h-5 w-5" />
+                )}
+                {selectedTeam?.deletedAt ? "Restore Team" : "Delete Team"}
+              </div>
+            </ModalHeader>
+            <ModalBody>
+              <p className="text-gray-300">
+                {selectedTeam?.deletedAt
+                  ? `Are you sure you want to restore "${selectedTeam?.name}"?`
+                  : `Are you sure you want to delete "${selectedTeam?.name}"? This action can be undone by restoring the team later.`}
+              </p>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                variant="light"
+                onPress={() => setShowDeleteModal(false)}
+                className="text-gray-400 hover:text-gray-200"
+              >
+                Cancel
+              </Button>
+              <Button
+                color={selectedTeam?.deletedAt ? "success" : "danger"}
+                onPress={handleDeleteTeam}
+                isLoading={isSubmitting}
+                className={
+                  selectedTeam?.deletedAt
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-red-600 hover:bg-red-700"
+                }
+              >
+                {selectedTeam?.deletedAt ? "Restore" : "Delete"}
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </div>
-
-      {/* Create Team Modal */}
-      <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="lg">
-        <ModalContent>
-          <ModalHeader>Create New Team</ModalHeader>
-          <ModalBody>
-            <Input
-              label="Team Name"
-              placeholder="Enter team name"
-              value={newTeamName}
-              onChange={(e) => setNewTeamName(e.target.value)}
-              variant="bordered"
-              color="success"
-              classNames={{
-                input: "text-white",
-                label: "text-gray-300",
-              }}
-            />
-            <Textarea
-              label="Description (Optional)"
-              placeholder="Enter team description"
-              value={newTeamDescription}
-              onChange={(e) => setNewTeamDescription(e.target.value)}
-              variant="bordered"
-              color="success"
-              classNames={{
-                input: "text-white",
-                label: "text-gray-300",
-              }}
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" onPress={onCreateClose}>
-              Cancel
-            </Button>
-            <Button
-              color="success"
-              variant="ghost"
-              onPress={handleCreateTeam}
-              isLoading={isCreating}
-              className="border-green-400/30 hover:border-green-400/60"
-            >
-              Create Team
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Edit Team Modal */}
-      <Modal isOpen={isEditOpen} onClose={onEditClose} size="lg">
-        <ModalContent>
-          <ModalHeader>Edit Team</ModalHeader>
-          <ModalBody>
-            <Input
-              label="Team Name"
-              placeholder="Enter team name"
-              value={editTeamName}
-              onChange={(e) => setEditTeamName(e.target.value)}
-              variant="bordered"
-              color="success"
-              classNames={{
-                input: "text-white",
-                label: "text-gray-300",
-              }}
-            />
-            <Textarea
-              label="Description (Optional)"
-              placeholder="Enter team description"
-              value={editTeamDescription}
-              onChange={(e) => setEditTeamDescription(e.target.value)}
-              variant="bordered"
-              color="success"
-              classNames={{
-                input: "text-white",
-                label: "text-gray-300",
-              }}
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" onPress={onEditClose}>
-              Cancel
-            </Button>
-            <Button
-              color="success"
-              variant="ghost"
-              onPress={handleUpdateTeam}
-              isLoading={isUpdating}
-              className="border-green-400/30 hover:border-green-400/60"
-            >
-              Update Team
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Add Member Modal */}
-      <Modal isOpen={isAddMemberOpen} onClose={onAddMemberClose} size="lg">
-        <ModalContent>
-          <ModalHeader>Add Member to {selectedTeam?.name}</ModalHeader>
-          <ModalBody>
-            <Select
-              label="Select User"
-              placeholder="Choose a user to add"
-              selectedKeys={selectedUserId ? [selectedUserId] : []}
-              onSelectionChange={(keys) =>
-                setSelectedUserId(Array.from(keys)[0] as string)
-              }
-              variant="bordered"
-              color="success"
-              classNames={{
-                label: "text-gray-300",
-                trigger:
-                  "border-white/20 hover:border-white/40 bg-white/5 text-white",
-                value: "text-white",
-                popoverContent:
-                  "bg-neutral-800/95 backdrop-blur-xl border-white/20",
-              }}
-            >
-              {getAvailableUsers().map((user) => (
-                <SelectItem key={user._id} textValue={user.name}>
-                  <div className="flex items-center space-x-2">
-                    <Avatar size="sm" name={user.name} />
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-gray-400 text-sm">{user.email}</p>
-                    </div>
-                  </div>
-                </SelectItem>
-              ))}
-            </Select>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" onPress={onAddMemberClose}>
-              Cancel
-            </Button>
-            <Button
-              color="success"
-              variant="ghost"
-              onPress={handleAddMember}
-              isDisabled={!selectedUserId}
-              className="border-green-400/30 hover:border-green-400/60"
-            >
-              Add Member
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+    </div>
   );
-}
+};
+
+export default TeamsManagementPage;

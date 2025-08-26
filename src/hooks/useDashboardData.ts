@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardProject {
@@ -89,8 +89,11 @@ export function useDashboardData(): DashboardData {
   const [error, setError] = useState<string | null>(null);
   const { user, isAuthenticated } = useAuth();
 
+  // Memoize user ID to prevent unnecessary re-renders
+  const userId = useMemo(() => user?.id, [user?.id]);
+
   useEffect(() => {
-    if (!isAuthenticated || !user) {
+    if (!isAuthenticated || !userId) {
       setIsLoading(false);
       return;
     }
@@ -175,7 +178,7 @@ export function useDashboardData(): DashboardData {
         // Calculate dashboard stats
         const totalIssues = transformedIssues.length;
         const myAssignedIssues = transformedIssues.filter(
-          (issue) => issue.assignee?._id === user.id
+          (issue) => issue.assignee?._id === userId
         ).length;
 
         const now = new Date();
@@ -213,7 +216,7 @@ export function useDashboardData(): DashboardData {
     };
 
     fetchDashboardData();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, userId]); // Use stable userId to prevent infinite loops
 
   return {
     projects,
